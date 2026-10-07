@@ -1,0 +1,16 @@
+[package]
+name = "sentinel-viralverify"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Naive-Bayes virus / plasmid / chromosome classification over Pfam HMM hits (viralVerify-style), using a shipped Pfam frequency table."
+
+[lib]
+name = "sentinel_viralverify"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+sentinel-core = { path = "../sentinel-core" }
+sentinel-hmmer = { path = "../sentinel-hmmer" }

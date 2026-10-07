@@ -1,0 +1,41 @@
+[package]
+name = "sentinel-cli"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Sentinel: a unified, (almost) pure-Rust genome quality-control tool unifying CheckV, CheckM2, BUSCO and ViralVerify with novel reference-free validators."
+
+[[bin]]
+name = "sentinel"
+path = "src/main.rs"
+
+[features]
+# reads: transparent gzip input + large-file chunking via cleaver.
+# scale: rayon parallel contigs + hydra-mpp distributed cluster status.
+# Both are light and on by default; polars export is opt-in (heavy build).
+default = ["reads", "scale"]
+reads = ["dep:cleaver-core"]
+scale = ["dep:hydra-mpp-core"]
+polars = ["dep:polars"]
+# gpu: forward to sentinel-gpu's wgpu compute backend (heavy graphics deps).
+gpu = ["sentinel-gpu/gpu"]
+
+[dependencies]
+anyhow = "1"
+serde_json = "1"
+rayon = "1.10"
+sentinel-core = { path = "../sentinel-core" }
+sentinel-hmmer = { path = "../sentinel-hmmer" }
+sentinel-checkv = { path = "../sentinel-checkv" }
+sentinel-checkm2 = { path = "../sentinel-checkm2" }
+sentinel-busco = { path = "../sentinel-busco" }
+sentinel-viralverify = { path = "../sentinel-viralverify" }
+sentinel-novel = { path = "../sentinel-novel" }
+sentinel-gpu = { path = "../sentinel-gpu" }
+sentinel-db = { path = "../sentinel-db" }
+libc = "0.2"
+dynamite-core = { path = "../../vendor/dynamite-core" }
+cleaver-core = { path = "../../vendor/cleaver-core", optional = true }
+hydra-mpp-core = { path = "../../vendor/hydra-mpp-core", optional = true }
+polars = { version = "0.36", optional = true, default-features = false, features = ["lazy", "csv"] }

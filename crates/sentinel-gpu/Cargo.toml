@@ -1,0 +1,23 @@
+[package]
+name = "sentinel-gpu"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "GPU compute acceleration for Sentinel with an always-available CPU fallback. The wgpu backend is gated behind the `gpu` feature so the default build stays dependency-light; the same API runs on CPU when no GPU is requested or present."
+
+[lib]
+name = "sentinel_gpu"
+path = "src/lib.rs"
+
+[features]
+default = []
+# Enables the wgpu compute backend (pulls heavy graphics deps). Without it,
+# all operations run on the CPU fallback.
+gpu = ["dep:wgpu", "dep:pollster", "dep:bytemuck"]
+
+[dependencies]
+rayon = "1.10"
+wgpu = { version = "0.19", optional = true }
+pollster = { version = "0.3", optional = true }
+bytemuck = { version = "1", optional = true, features = ["derive"] }

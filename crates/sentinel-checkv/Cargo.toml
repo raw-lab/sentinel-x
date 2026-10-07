@@ -1,0 +1,19 @@
+[package]
+name = "sentinel-checkv"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Viral completeness and contamination assessment (CheckV-style): direct/inverted terminal-repeat detection, HMM-reference-length completeness, sliding-window provirus/host-boundary detection, and quality tiering."
+
+[lib]
+name = "sentinel_checkv"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+sentinel-core = { path = "../sentinel-core" }
+sentinel-hmmer = { path = "../sentinel-hmmer" }
+
+[dev-dependencies]
+serde_json = "1"

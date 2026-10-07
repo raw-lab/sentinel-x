@@ -1,0 +1,17 @@
+[package]
+name = "sentinel-checkm2"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Bacterial/archaeal completeness and contamination (CheckM2-style): builds the 21,241-feature KEGG-KO vector (amino-acid metadata + KO genes/pathways/modules/categories) and runs the real CheckM2 LightGBM models via sentinel-gbm."
+
+[lib]
+name = "sentinel_checkm2"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+serde_json = "1"
+sentinel-core = { path = "../sentinel-core" }
+sentinel-gbm = { path = "../sentinel-gbm" }

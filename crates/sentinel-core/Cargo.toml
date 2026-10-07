@@ -1,0 +1,18 @@
+[package]
+name = "sentinel-core"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+license.workspace = true
+description = "Shared Sentinel foundation: FASTA IO, domain types, composition statistics (GC, tetranucleotide, skew, k-mer spectra), ORF/gene calling via DYNAMITE, and the SENTINEL banner."
+
+[lib]
+name = "sentinel_core"
+path = "src/lib.rs"
+
+[dependencies]
+anyhow = "1"
+rayon = "1.10"
+serde = { version = "1", features = ["derive"] }
+flate2 = "1"
+dynamite-core = { path = "../../vendor/dynamite-core" }

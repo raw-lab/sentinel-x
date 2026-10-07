@@ -1,0 +1,42 @@
+//! The SENTINEL banner — the wordmark printed on `sentinel --help`, at the
+//! start of a run, and in the `doctor` report. A watchtower stands guard beside
+//! the SENTINEL wordmark, scanning a double helix, in the same spirit as the
+//! DYNAMITE banner it sits alongside.
+
+/// Crate version, surfaced in the banner.
+pub const VERSION: &str = env!("CARGO_PKG_VERSION");
+
+/// Full banner: wordmark + tagline footer.
+pub fn banner() -> String {
+    format!(
+        "{ART}\nv{VERSION}  \u{00b7}  genome integrity sentinel for every domain of life\nviruses \u{00b7} bacteria \u{00b7} archaea \u{00b7} eukaryotes   \u{2014}   completeness \u{00b7} contamination \u{00b7} validation\npowered by  checkv + checkm2 + busco + viralverify   \u{00b7}   dynamite \u{00b7} cleaver \u{00b7} hydraMPP\n",
+        ART = ART,
+        VERSION = VERSION
+    )
+}
+
+/// Just the wordmark art (no footer): a watchtower beside the SENTINEL figlet
+/// with a double-helix readout.
+pub const ART: &str = r#"            .-.
+            |█|            ____  _____ _   _ _____ ___ _   _ _____ _
+           _|=|_          / ___|| ____| \ | |_   _|_ _| \ | | ____| |
+          |     |         \___ \|  _| |  \| | | |  | ||  \| |  _| | |
+          | (O) |          ___) | |___| |\  | | |  | || |\  | |___| |___
+          |     |         |____/|_____|_| \_| |_| |___|_| \_|_____|_____|
+          | (O) |        ────────────────────────────────────────────────
+          |_____|         guarding the genome, base by base
+         /|=====|\        A=T  G≡C   ⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇
+        /_|=====|_\       T=A  C≡G   ⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇⌇
+          |_____|"#;
+
+#[cfg(test)]
+mod tests {
+    #[test]
+    fn banner_contains_wordmark_and_tagline() {
+        let b = super::banner();
+        // The figlet's distinctive S-row appears verbatim.
+        assert!(b.contains("/ ___||"));
+        assert!(b.contains("guarding the genome"));
+        assert!(b.contains("completeness"));
+    }
+}
