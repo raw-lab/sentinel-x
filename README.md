@@ -9,293 +9,222 @@
           |     |         |____/|_____|_| \_| |_| |___|_| \_|_____|_____|
           | (O) |        ────────────────────────────────────────────────
           |_____|         guarding the genome, base by base
-         /|=====|\        A=T  G≡C
-        /_|=====|_\       T=A  C≡G
-          |_____|
 ```
 
-**Sentinel** is a single, (almost) pure-Rust tool that unifies four pillars of
-genome quality control —
-[**CheckV**](https://bitbucket.org/berkeleylab/checkv) (viruses),
-[**CheckM2**](https://github.com/chklovski/CheckM2) (bacteria/archaea),
-[**BUSCO**](https://busco.ezlab.org/) (eukaryotes/single-copy orthologs) and
-[**ViralVerify**](https://github.com/ablab/viralVerify) (virus/plasmid/chromosome
-classification) — behind one CLI, one gene call, and one report. It adds three
-**novel reference-free validators** that work with *no database at all*.
+**Sentinel** (`sentinel-qc`) is a single pure-Rust binary for genome quality
+control across viruses, bacteria, archaea and eukaryotes. It re-implements
+the scoring of five standard tools, adds three reference-free checks, and
+writes one table, one JSON and one HTML report.
 
-It assesses **completeness**, **contamination**, and **structural validity** for
-contigs and genomes from every domain of life.
+* **Reference tools re-implemented:** CheckV, CheckM2, BUSCO, EukCC and viralVerify.
+* **Reference-free checks:** TRACE, CHIMERA-SCAN and SAGE.
+* **External programs needed at run time:** none. That covers Python, HMMER, DIAMOND, Prodigal and LightGBM.
 
----
-
-## Why
-
-The standard QC stack is four tools in three languages with four installation
-procedures, four sets of dependencies, and four output formats. Sentinel folds
-them into one statically-linked binary that:
-
-* calls genes **once** (via the bundled `dynamite` engine) and shares the result
-  across every validator;
-* embeds a **pure-Rust Plan-7 HMMER** engine (`sentinel-hmmer`) and a
-  **LightGBM evaluator** (`sentinel-gbm`) so inference needs no Python, no
-  `hmmsearch`, and no `lightgbm` runtime;
-* degrades gracefully — the parts that need gigabyte reference databases use them
-  *when provided*, while the structural signals and all novel modules **always
-  run**;
-* parallelises with `rayon` locally and can scale across nodes with the bundled
-  `hydra-mpp`, with optional GPU kernels via `wgpu`.
-
----
-
-## Architecture
-
-```
-sentinel (CLI)
-│
-├── sentinel-core         FASTA I/O, Domain routing, gene calling, composition, report
-├── sentinel-hmmer        pure-Rust Plan-7 profile HMM search (Forward/Viterbi, log-odds)
-├── sentinel-gbm          LightGBM text-model evaluator (exact CheckM2 reproduction)
-│
-├── sentinel-checkv       viral: DTR/ITR terminal repeats, provirus boundary, completeness
-├── sentinel-checkm2      bacterial/archaeal: 21,241-feature KEGG vector → LightGBM
-├── sentinel-busco        single-copy orthologs: Single/Duplicated/Fragmented/Missing
-├── sentinel-viralverify  Naive-Bayes virus / plasmid / chromosome from Pfam content
-│
-├── sentinel-novel        TRACE · CHIMERA-SCAN · SAGE  (reference-free, always on)
-├── sentinel-gpu          rayon CPU kernels + optional wgpu compute (feature `gpu`)
-└── sentinel-db           database registry + downloader + doctor (fetch/extract/verify)
-
-vendored engines:  dynamite-core (ORF calling) · cleaver-core (FASTA/FASTQ/BAM)
-                   hydra-mpp-core (distributed scaling) · rustyomestats
-```
-
-Every box above is its own crate in the Cargo workspace.
-
----
-
-## What is validated
-
-Sentinel's inference paths were cross-checked against the original
-implementations:
-
-| Component | Check | Result |
+| validator | reproduces | needs |
 |---|---|---|
-| `sentinel-gbm` | Predictions vs Python `lightgbm` on the **real** CheckM2 `general_model_COMP.gbm` and `model_CONT.gbm` | **exact to 8 decimals** |
-| `sentinel-checkm2` | KO → pathway/module/category aggregation vs CheckM2's `KeggCalculator` | **exact on all 208 non-zero aggregates** |
-| `sentinel-checkm2` | Feature-vector length & ordering | **21,241** features, matching CheckM2 |
-| `sentinel-hmmer` | Bit-score convention (no-information sequence ≈ 0 bits) | matches HMMER log-odds model |
-| `sentinel-checkv` | DTR/ITR detection logic | mirrors CheckV `fetch_dtr`/`fetch_itr` |
+| **CheckV** | CheckV 1.1.1: AAI and HMM completeness, host contamination and proviruses, complete genomes (DTR/ITR), quality tiers, all CheckV tables | CheckV database |
+| **CheckM2** | CheckM2 1.1.0: 21,241 KEGG features, LightGBM general models, neural-network specific model, model selection, `quality_report.tsv` | CheckM2 DIAMOND database (models are embedded) |
+| **BUSCO** | BUSCO 6.1.0 scoring for odb10, odb12 and odb12.2 datasets: Single / Duplicated / Fragmented / Missing, `full_table.tsv` | a BUSCO lineage |
+| **EukCC** | EukCC 2 completeness/contamination from a marker set (GA cutoffs) | a selected marker HMM set |
+| **viralVerify** | viralVerify 1.1 virus / plasmid / chromosome Naive Bayes on Pfam domains (`--cut_nc`) | Pfam-A |
+| TRACE | terminal repeats and coding architecture for phages | — |
+| CHIMERA-SCAN | compositional junctions inside a contig (inter-species chimeras) | — |
+| SAGE | contigs of a bin that depart from its core composition | — |
 
-The full workspace test-suite (`cargo test --workspace`) passes with **0
-failures**.
+Built-in engines:
 
----
+* **HMMER engine** with hmmsearch 3.4 scoring: length model, null2, domains, GA/NC/TC cutoffs, MSV/Viterbi/Forward filters.
+* **DIAMOND-compatible protein search** (`protsearch`). Output is byte-identical to DIAMOND 2.1.9 with CheckM2's settings, and it reads `.dmnd` files in place.
+* **LightGBM evaluator** for CheckM2's models.
+* **[dynamite-orfs](https://crates.io/crates/dynamite-orfs)** gene calling with Prodigal and prodigal-gv presets.
 
-## Install / build
+How closely each validator matches the original tool, with numbers, is in
+[AUDIT.md](AUDIT.md) and [VALIDATION.md](VALIDATION.md).
 
-Requires a Rust toolchain (MSRV **1.75**).
+## Install
 
-```bash
-cd sentinel
-cargo build --release            # default features: reads + scale
-./target/release/sentinel help   # run by path from the build dir
-```
-
-### Putting `sentinel` on your PATH
-
-The quickest path is the bundled script:
+Needs Rust **1.75 or newer**. The apt `rustc`/`cargo` on Ubuntu 24.04 is enough.
 
 ```bash
-./install.sh                     # builds + installs to ~/.local/bin
-PREFIX=/usr/local ./install.sh   # system-wide (may need sudo)
+cargo build --release --locked           # → target/release/sentinel (~21 MB, models embedded)
+./install.sh                             # same, then installs to ~/.local/bin
+PREFIX=/usr/local ./install.sh           # system-wide
 ```
 
-Or do it manually. After building, the binary is at `target/release/sentinel`.
-If you run `sentinel ...` and get `sentinel: command not found`, it just isn't
-on your PATH yet. Pick one:
+Sentinel is one crate with one binary. Its features:
 
-```bash
-# (a) install with cargo  ->  ~/.cargo/bin/sentinel  (usually already on PATH)
-cargo install --path crates/sentinel-cli
-
-# (b) copy into a user bin dir on your PATH
-install -m 0755 target/release/sentinel ~/.local/bin/sentinel
-
-# (c) system-wide (needs sudo)
-sudo install -m 0755 target/release/sentinel /usr/local/bin/sentinel
-```
-
-If you downloaded the prebuilt `sentinel` binary instead of building, make it
-executable first, then do (b) or (c):
-
-```bash
-chmod +x sentinel
-./sentinel help                  # or move it onto your PATH as above
-```
-
-Then `sentinel -h`, `sentinel doctor`, etc. work from anywhere.
-
-Feature flags:
-
-| Feature | Default | Effect |
+| feature | default | effect |
 |---|---|---|
-| `reads` | on | transparent gzip input + large-file chunking (`cleaver`) |
-| `scale` | on | rayon parallel contigs + `hydra-mpp` cluster status |
-| `gpu`   | off | `wgpu` compute backend for pairwise-distance kernels |
-| `polars`| off | (in `sentinel-cli`) polars dataframe export |
+| `embed-models` | on | embed CheckM2's LightGBM and neural-network models (about 9 MB compressed) |
+| `reads` | on | `--chunk-size`: stream huge FASTA files in chunks with [Cleaver-X](https://crates.io/crates/Cleaver-X) |
+| `scale` | on | `cluster-status` for a [hydra-mpp](https://crates.io/crates/hydra-mpp) cluster |
+| `rustyomestats` | off | cross-check assembly statistics with [rustyomestats](https://crates.io/crates/rustyomestats) on every run. Needs rustc ≥ 1.88 and pulls in polars, plotters and rust-bio (~220 crates) |
 
-GPU and polars are off by default to keep the build light; the same APIs run on
-CPU without them.
-
----
-
-## Usage
+## Quick start
 
 ```bash
-sentinel run -i contigs.fna -d auto -o report.tsv
+sentinel download checkv                       # viral reference database
+sentinel download checkm2                      # CheckM2 DIAMOND database
+sentinel download busco --lineage bacteria_odb12.2
+sentinel download pfam                         # for --viralverify
+sentinel doctor --verify                       # status, checksums, readiness
+
+# viruses / phages: one row per contig and validator
+sentinel run -i phages.fna -d virus -o viral.tsv --outdir viral_out -t 8
+
+# bacterial or archaeal bins: a directory holds one genome per file
+sentinel run -i bins/ -d bacteria -o bins.tsv --outdir bins_out -t 16
+
+# add BUSCO
+sentinel run -i genome.fna -d bacteria --lineage bacteria_odb12.2 -o qc.tsv
+
+# eukaryotes
+sentinel run -i genome.fna -d eukaryote --markers markers.hmm --lineage eukaryota_odb12 -o euk.tsv
 ```
 
-```
-sentinel run OPTIONS:
-  -i, --input <FASTA>        Input nucleotide FASTA (.fa/.fna[.gz])       [required]
-  -d, --domain <D>           virus | bacteria | archaea | eukaryote | auto [default: auto]
-  -o, --output <TSV>         Write the QC table here                      [default: stdout]
-      --json <PATH>          Also write a JSON report
-      --min-len <N>          Ignore contigs shorter than N bases          [default: 0]
-  -t, --threads <N>          Worker threads                               [default: 1]
-      --checkm2-comp <GBM>   CheckM2 completeness LightGBM model (.gbm)
-      --checkm2-cont <GBM>   CheckM2 contamination LightGBM model (.gbm)
-      --ko <FILE>            KOs present (one KO id per line) for CheckM2
-      --gpu                  Use the GPU backend if available (else CPU)
-      --no-novel             Skip the novel TRACE/CHIMERA/SAGE modules
-      --chunk-size <BYTES>   Pre-split huge inputs (requires `reads`)
-      --scale                Parallelise contigs across threads
-```
+### Domains
 
-### Examples
+* `-d virus` and `-d mixed` work **per contig**:
+  * CheckV, TRACE and CHIMERA-SCAN always run.
+  * viralVerify runs with `--viralverify`. It is opt-in because a Pfam-A search is the heaviest step.
+* `-d bacteria` and `-d archaea` work **per genome**:
+  * CheckM2 and SAGE run, plus BUSCO with `--lineage`.
+  * CHIMERA-SCAN runs per contig.
+* `-d eukaryote` works **per genome**:
+  * EukCC runs with `--markers`, BUSCO with `--lineage`, and SAGE.
+  * CHIMERA-SCAN runs per contig.
 
-Viral contigs (structural CheckV + novel modules, no database needed):
+`auto` is accepted as an alias of `mixed`; Sentinel does not detect the domain.
 
-```bash
-sentinel run -i phage_contigs.fna -d virus -o viral_qc.tsv --json viral_qc.json
-```
-
-Bacterial genome with the real CheckM2 models:
-
-```bash
-sentinel run -i genome.fna -d bacteria \
-  --checkm2-comp models/general_model_COMP.gbm \
-  --checkm2-cont models/model_CONT.gbm \
-  --ko genome_kofam_hits.txt \
-  -o checkm2_qc.tsv
-```
-
-Each contig/genome yields one row **per validator**, e.g.:
+### Main options
 
 ```
-contig_id          length  domain  validator      gene_count  completeness  contamination  quality          method                     extra
-phage_1            23404   virus   checkv          50          NA            0.00           Not-determined   structural                 viral_genes=0;host_genes=0
-phage_1            23404   virus   trace           50          NA            NA             High-quality     architecture               trace_confidence=highly-complete;coding_density=0.905
-phage_1            23404   virus   chimera-scan    50          NA            0.00           Not-determined   tetranucleotide-coherence  n_windows=4;max_zscore=1.72;gc=0.500
+-i, --input <FASTA|DIR>   FASTA (.fa/.fna[.gz], gzip detected by content); a directory = one genome per file
+-d, --domain <D>          virus | bacteria | archaea | eukaryote | mixed       [mixed]
+    --db <DIR>            database root            [--db > $SENTINEL_DB > ~/.sentinel/db]
+-o, --output <TSV>        unified table ("-" = stdout)                          [stdout]
+    --json <PATH>         the same table as JSON
+    --html <PATH>         HTML report        [default: next to -o; never for stdout or /dev/*]
+    --outdir <DIR>        each tool's own tables (CheckV, CheckM2, BUSCO, viralVerify, SAGE)
+-t, --threads <N>         threads for every stage (0 = all CPUs)                [1]
+    --min-len <N>         drop contigs shorter than N
+    --no-novel            skip TRACE / CHIMERA-SCAN / SAGE
+virus / mixed:   --proteins <FAA>  --checkv-strict  --viralverify  --chunk-size <BYTES>
+prokaryotes:     --ttable <N>  --ko <FILE>  --checkm2-comp <GBM> --checkm2-cont <GBM>
+genome-level:    --lineage <NAME|DIR>  --genes (protein FASTA input)
+eukaryote:       --markers <HMM>
 ```
 
----
+`sentinel help` prints everything; `sentinel info` lists the engines and features.
 
-## The novel modules
+## Outputs
 
-These are unique to Sentinel and run **database-free**, judging a sequence purely
-from itself and its predicted genes.
+**Unified table** (`-o`): one row per contig or genome **per validator**.
 
-### TRACE — Terminal-Repeat & Architecture Completeness
-A completeness estimate for viruses/phages that fuses (1) direct/inverted
-terminal repeats, (2) head-to-tail k-mer overlap signalling a circular/headful
-molecule, and (3) coding architecture (gene density, largest non-coding gap).
-Reports `complete` / `highly-complete` / `partial` / `fragment`.
-
-### CHIMERA-SCAN — Compositional-Coherence Contamination
-Tiles a contig into windows, computes each window's tetranucleotide signature,
-and finds the sharpest composition seam plus the overall dispersion. Flags
-cross-domain contamination and mis-assembled chimeras and reports a putative
-breakpoint — including the clean two-organism case that defeats simple
-centroid-dispersion methods.
-
-### SAGE — Single-copy Anchor-Gene & Codon-Coherence
-Asks whether a genome's proteins look like they came from **one** organism: it
-measures amino-acid composition coherence around the proteome centroid, flags
-compositional-outlier proteins (a database-free contamination proxy), and detects
-near-identical single-copy violations.
-
----
-
-## Databases (managed by `sentinel doctor` / `sentinel download`)
-
-The reference validators need large databases that Sentinel does **not** bundle.
-Sentinel manages them under a single root (`$SENTINEL_DB`, default
-`~/.sentinel/db`):
-
-```bash
-sentinel doctor --build           # create the folder skeleton + manifest.json
-sentinel download all             # fetch every reference database at once
-sentinel download checkv          # …or fetch one DB:  CheckV genome/HMM DB
-sentinel download busco --lineage bacteria_odb10
-sentinel doctor                   # verify what's installed + per-validator readiness
+```
+contig_id  length  domain  validator  gene_count  completeness  contamination  quality  method  warnings  extra
 ```
 
-`sentinel download all` fetches every database in one pass (skipping any already
-installed, and continuing past individual failures); BUSCO is included only when
-`--lineage` is supplied, since it cannot be fetched without one.
+* `quality` is CheckV's tier for viruses and the MIMAG tier (completeness and contamination) for CheckM2 and EukCC.
+* `extra` holds `key=value` pairs separated by `;`. Inside values, `;` and `=` are written as `%3B` and `%3D`, and `%` is written as `%25` only when two hex digits follow it.
+* For SAGE, `contamination` is the discordant bp % (see below).
 
-`sentinel doctor` reports the runtime, the database downloader, optional external
-tools (DIAMOND, HMMER), and the status of every database (`OK` / `PARTIAL` /
-`EMPTY` / `MISSING`), then summarises which validators are ready. The downloader
-fetches from the **canonical upstream sources** — CheckV from
-`portal.nersc.gov/CheckV`, CheckM2 from its Zenodo record
-(`10.5281/zenodo.14897628`), Pfam-A from EBI, BUSCO from `busco-data.ezlab.org` —
-extracts the archives (pure-Rust `tar`+`flate2`) and verifies checksums
-(`sha2`). Layout, e.g. for CheckV, mirrors the original tool exactly
-(`<root>/checkv/<release>/genome_db/…`, `…/hmm_db/…`) so the files are
-drop-in.
+**Each tool's own tables** (`--outdir`):
 
-A run can point at the root and auto-discover models:
+* `checkv/`: `quality_summary.tsv`, `completeness.tsv`, `contamination.tsv`, `complete_genomes.tsv`, `tmp/gene_features.tsv`, `tmp/aai.tsv`, `viruses.fna`, `proviruses.fna`.
+* `checkm2/`: `quality_report.tsv` and `protein_files/`.
+* `busco/<genome>/`: `full_table.tsv` and a short summary.
+* `viralverify/`: `<input>_result_table.csv`.
+* `sage/`: `<genome>.discordant_contigs.tsv`.
 
-```bash
-sentinel run -i genome.fna -d bacteria --db ~/.sentinel/db -o qc.tsv
+**HTML report**: one self-contained file with no external assets.
+
+* **Summary panel:** completeness and contamination gauges for a single genome or contig. For many, the quality-tier distribution and median estimates.
+* **Statistics strip:** size, contigs, N50, GC, coding density.
+* **Results table:** sortable, one row per genome or contig, up to 5,000 rows.
+* **Detail cards and markers:** per-validator cards for small inputs, plus marker bars for BUSCO and EukCC.
+* **Warnings:** each one tagged with its validator and genome or contig.
+
+### CheckV: default vs `--checkv-strict`
+
+CheckV 1.1.1 groups DIAMOND's output rows by contig on the assumption that
+they arrive in input order. DIAMOND ≥ 2.1 sorts them by query length under
+CheckV's settings, so CheckV computes AAI completeness per fragment of each
+contig and keeps the last fragment.
+
+* **Default:** Sentinel uses all of a contig's hits.
+* **`--checkv-strict`:** reproduces CheckV's tables exactly, bug included.
+
+## Databases
+
+| database | `sentinel download` | source | verified by |
+|---|---|---|---|
+| CheckV | `checkv` | `portal.nersc.gov/CheckV` (`CURRENT_RELEASE.txt`) | SHA-256 and size recorded (none published) |
+| CheckM2 | `checkm2` | DOI `10.5281/zenodo.14897628` (DIAMOND DB v3, CheckM2 ≥ 1.1) | Zenodo MD5, `CONTENTS.json`, SHA-256 of the `.dmnd` |
+| Pfam-A | `pfam` | EBI `current_release` | `md5_checksums` |
+| BUSCO | `busco --lineage NAME` | `busco-data.ezlab.org/v5/data` (backup `busco-data2`) | MD5 from `file_versions.tsv` |
+
+How installs work:
+
+* Files download into `<root>/.staging/`, are verified and unpacked there, then moved into place atomically.
+* A `.sentinel-complete.json` marker records each verified install.
+* Failed transfers resume. A checksum failure triggers a fresh download.
+* `sentinel download all [--lineage …]` fetches everything and skips what is already installed.
+* DIAMOND databases are read in place; no conversion is needed. `sentinel convert` extracts a `.dmnd` to FASTA if you want one.
+* For mirrors and offline tests, the URLs can be overridden with `SENTINEL_CHECKV_URL`, `SENTINEL_DOI_RESOLVER`, `SENTINEL_ZENODO_API`, `SENTINEL_PFAM_URL` and `SENTINEL_BUSCO_URL`. `SENTINEL_CHECKM2_SHA256` sets the expected `.dmnd` hash.
+
+## The reference-free modules
+
+These run without any database. They judge a sequence by its own
+composition and genes, so they report flags and indices, not
+reference-calibrated estimates.
+
+* **TRACE** combines a CheckV-filtered terminal repeat (DTR/ITR), a head-to-tail k-mer overlap and the coding architecture (union coding density, largest gap). It returns a label: `complete`, `highly-complete`, `partial` or `fragment`.
+* **CHIMERA-SCAN** tiles a contig into 5 kb windows and finds the best split into two segments.
+  * It reports the junction strength D = 1 − cos(left mean profile, right mean profile) and flags D ≥ 0.12.
+  * Calibration on complete chromosomes and inter-species junctions: 0.95 % false positives, 95.4 % sensitivity.
+  * Phage–host junctions are usually invisible to composition; CheckV finds those.
+* **SAGE** estimates the share of a bin's sequence that departs from its core tetranucleotide composition (contigs ≥ 5 kb), reported as `discordant_bp_pct`, and lists the discordant contigs.
+  * On simulated MAGs it tracks the true contaminant fraction to within −1.2…+2.0 points.
+  * It cannot see close relatives, and atypical plasmids or islands count as discordant.
+
+## Other commands
+
+```
+sentinel blastp -q q.faa -d db.dmnd --preset checkm2|checkv [-t N]   # DIAMOND-compatible tabular output
+sentinel convert db.dmnd out.faa                                       # .dmnd → FASTA
+sentinel doctor [--db DIR] [--build] [--verify]
+sentinel cluster-status <addr> [port]                                  # feature `scale`
+sentinel info | version | banner | help
 ```
 
-| Validator | Needs | Without it |
-|---|---|---|
-| CheckV (reference completeness) | CheckV HMM DB + reference-length table | terminal-repeat & structural verdict still produced |
-| CheckM2 (prediction) | KOfam/DIAMOND DB (KO annotations) + the `.gbm` models | feature vector built; prediction only with models + `--ko` |
-| BUSCO | a lineage `odb` dataset | SAGE + composition reported instead |
-| ViralVerify | Pfam-A HMM DB (per-contig hits) | classifier table embedded; needs Pfam hits to classify |
+## Differences
 
-What **is** embedded: the ViralVerify Pfam classification table and CheckM2's KEGG
-feature-definition JSONs (feature ordering, module definitions, path/category
-mapping).
+The main ones:
 
-## Validation against CheckV & CheckM2
+* **Gene calls differ from the reference callers.**
+  * dynamite-orfs matches Prodigal coordinates for 94–100 % of genes in single mode, 87 % in meta mode, and 81 % against pyrodigal-gv. It does not mask N runs.
+  * These differences cause most residual end-to-end differences. `--proteins` and `--genes` accept external gene calls.
+* **EukCC** does no tree placement or marker-set selection.
+* **BUSCO genome mode** uses Sentinel's gene calls.
+* **The parity tests used miniature databases**, because the real hosts were unreachable from the build environment.
 
-Sentinel's inference was checked against the original tools' own code on the same
-inputs (full details in `VALIDATION.md`):
+## License
 
-* **CheckV terminal repeats** — identical to CheckV (and its ground truth) on all
-  46 test contigs (DTR type + length).
-* **CheckM2 metadata** — all 22 amino-acid/length/CDS features identical on the
-  same 126 proteins.
-* **CheckM2 KEGG aggregation** — exact on all 208 pathway/module/category
-  aggregates.
-* **CheckM2 LightGBM** — completeness and contamination bit-for-bit identical
-  (diff `0.00e+00`) on the same 21,241-dimension vector.
+Creative Commons Attribution-NonCommercial (CC BY-NC 4.0)
 
+See the LICENSE file for details.
 
----
+## Credits
 
-## Status
+Sentinel re-implements published methods. Please cite the original tools:
 
-* 11 Sentinel crates, ~5,500 lines of new Rust, plus four vendored Rust engines.
-* `cargo test --workspace` — **all green**.
-* Inference cross-validated against CheckM2's Python/LightGBM stack to numerical
-  equality.
-
-Licensed GPL-3.0-or-later (inherits the licenses of the wrapped tools).
-```
+* **CheckV:** Nayfach et al. 2021, *Nat. Biotechnol.*
+* **CheckM2:** Chklovski et al. 2023, *Nat. Methods*
+* **BUSCO:** Manni et al. 2021, *Mol. Biol. Evol.*
+* **EukCC:** Saary et al. 2020, *Genome Biol.*
+* **viralVerify:** Antipov et al. 2020, *Bioinformatics*
+* **HMMER:** Eddy 2011
+* **DIAMOND:** Buchfink et al. 2021
+* **Prodigal:** Hyatt et al. 2010
+* **MIMAG:** Bowers et al. 2017

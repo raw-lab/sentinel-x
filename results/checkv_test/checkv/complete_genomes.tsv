@@ -1,0 +1,2 @@
+contig_id	contig_length	kmer_freq	prediction_type	confidence_level	confidence_reason	repeat_length	repeat_count	repeat_n_freq	repeat_mode_base_freq	repeat_seq
+79b63289c8f743cc_1	499946	1.0	DTR	high	AAI-based completeness > 90%	127	2	0.0	0.28346456692913385	GTTCCTTATACATACCGATAGTTTTAAAAAAGGAACTTTATAATAACGGAGGAGTAGCTCAGTTGGTAGAGCGGCAGATTGAAGATCTGCGCGTCGGGGGTTCAAGTCCCTTTTCCTCCACCATATA

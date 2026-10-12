@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sentinel QC — checkm2_testdata/</title>
+<style>
+:root{--bg:#0b0f17;--panel:#111827;--panel2:#0f1520;--line:#1f2937;--fg:#e5e7eb;--mut:#9ca3af;
+--acc:#7c9cf6;--acc2:#a78bfa;--cp:#22d3ee;--hi:#34d399;--md:#fbbf24;--lo:#f87171;--nd:#6b7280;}
+*{box-sizing:border-box}
+body{margin:0;background:radial-gradient(1200px 600px at 50% -200px,#182036 0,var(--bg) 60%);background-color:var(--bg);
+color:var(--fg);font:15px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif}
+code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.92em}
+.wrap{max-width:1240px;margin:0 auto;padding:34px 16px 60px}
+.hd{display:flex;align-items:baseline;justify-content:space-between;flex-wrap:wrap;gap:8px;
+border-bottom:1px solid var(--line);padding-bottom:16px}
+.brand{font-size:24px;font-weight:700;letter-spacing:.3px}
+.logo{background:linear-gradient(135deg,var(--acc),var(--acc2));-webkit-background-clip:text;
+background-clip:text;color:transparent;font-size:26px}
+.sub{color:var(--mut);font-size:13px}
+.genome{font-size:19px;font-weight:600;margin:22px 0 6px;word-break:break-all;
+background:linear-gradient(90deg,var(--acc),var(--acc2));-webkit-background-clip:text;background-clip:text;color:transparent}
+.hero{display:flex;gap:26px;align-items:center;flex-wrap:wrap;justify-content:center;
+background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:26px;margin:14px 0}
+.hero .empty{color:var(--mut)}
+.overview{justify-content:flex-start;align-items:stretch}
+.ovcount{text-align:center;min-width:110px;display:flex;flex-direction:column;justify-content:center}
+.ovnum{font-size:44px;font-weight:800;line-height:1}
+.ovlab{color:var(--mut);text-transform:uppercase;letter-spacing:.6px;font-size:13px;margin-top:6px}
+.ovmain{flex:1;min-width:240px}
+.ovtitle{font-weight:600;margin-bottom:10px}
+.ovfoot{color:var(--mut);font-size:13px;margin-top:10px}
+.gauge{text-align:center}
+.gval{fill:var(--fg);font-size:26px;font-weight:700}
+.gval .pct{font-size:14px;fill:var(--mut)}
+.glabel{color:var(--mut);font-size:13px;margin-top:2px;text-transform:uppercase;letter-spacing:.6px}
+.herobadge{text-align:center;min-width:150px}
+.qbadge{display:inline-block;padding:8px 16px;border-radius:999px;font-weight:700;font-size:15px;white-space:nowrap}
+.qbadge.sm{padding:3px 10px;font-size:12px}
+.qbadge.xs{padding:1px 8px;font-size:11px}
+.b-cp{background:rgba(34,211,238,.14);color:var(--cp);border:1px solid rgba(34,211,238,.4)}
+.b-hi{background:rgba(52,211,153,.14);color:var(--hi);border:1px solid rgba(52,211,153,.35)}
+.b-md{background:rgba(251,191,36,.14);color:var(--md);border:1px solid rgba(251,191,36,.35)}
+.b-lo{background:rgba(248,113,113,.14);color:var(--lo);border:1px solid rgba(248,113,113,.35)}
+.b-nd{background:rgba(148,163,184,.12);color:#cbd5e1;border:1px solid rgba(148,163,184,.3)}
+.qsrc{color:var(--mut);font-size:12px;margin-top:8px}
+.stripwrap{margin:14px 0}
+.strip{display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:12px}
+.stat{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:16px 12px;text-align:center}
+.snum{font-size:21px;font-weight:700}
+.slabel{color:var(--mut);font-size:12px;margin-top:3px}
+.markerpanel{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:20px;margin:14px 0}
+.mtitle{font-weight:600;margin-bottom:12px}
+.mset{color:var(--mut);font-weight:400;font-size:13px;margin-left:6px}
+.mbar{display:flex;height:22px;border-radius:8px;overflow:hidden;background:#0b1220;border:1px solid var(--line)}
+.seg{height:100%}
+.seg.single,.t-hi{background:#10b981}.seg.dup,.t-md{background:#f59e0b}.seg.frag{background:#a78bfa}
+.seg.miss{background:#374151}.t-cp{background:#22d3ee}.t-lo{background:#ef4444}.t-nd{background:#4b5563}
+.mlegend{display:flex;gap:16px;flex-wrap:wrap;color:var(--mut);font-size:13px;margin-top:12px}
+.mlegend b{color:var(--fg)}
+.dot{display:inline-block;width:10px;height:10px;border-radius:3px;margin-right:6px;vertical-align:middle}
+.dot.single{background:#10b981}.dot.dup{background:#f59e0b}.dot.miss{background:#374151}.dot.frag{background:#a78bfa}
+.mtot{margin-left:auto}
+.section{font-size:15px;text-transform:uppercase;letter-spacing:1px;color:var(--mut);
+margin:30px 0 12px;border-bottom:1px solid var(--line);padding-bottom:8px}
+.hint{text-transform:none;letter-spacing:0;font-size:12px;color:#6b7280;margin-left:8px;font-weight:400}
+.note{color:var(--mut);font-size:13px;margin:6px 0 10px}
+.tablewrap{overflow-x:auto;border:1px solid var(--line);border-radius:14px;background-color:var(--panel);
+background-image:linear-gradient(to right,var(--panel) 30%,rgba(17,24,39,0)),linear-gradient(to left,var(--panel) 30%,rgba(17,24,39,0)),
+radial-gradient(farthest-side at 0 50%,rgba(124,156,246,.35),rgba(124,156,246,0)),radial-gradient(farthest-side at 100% 50%,rgba(124,156,246,.35),rgba(124,156,246,0));
+background-position:left center,right center,left center,right center;background-repeat:no-repeat;
+background-size:40px 100%,40px 100%,14px 100%,14px 100%;background-attachment:local,local,scroll,scroll}
+table.results{border-collapse:collapse;width:100%;font-size:13px}
+.results th{position:sticky;top:0;background:#151d2e;color:var(--mut);font-weight:600;text-align:left;
+padding:9px 9px;border-bottom:1px solid var(--line);cursor:pointer;white-space:nowrap;user-select:none}
+.results th[data-dir=asc]::after{content:" ▲";font-size:10px}.results th[data-dir=desc]::after{content:" ▼";font-size:10px}
+.results td{padding:7px 9px;border-bottom:1px solid #182133;white-space:nowrap}
+.results tr:hover td{background:#141c2c}
+.results .n{text-align:right;font-variant-numeric:tabular-nums}
+.results td.id{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:12px;max-width:260px;
+overflow:hidden;text-overflow:ellipsis}
+.na{color:#4b5563}
+.flag{color:var(--md);font-weight:600}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:16px 18px}
+.chead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.cname{font-weight:700;font-size:16px}
+.cunit{color:var(--mut);font-size:12px;margin-top:4px;word-break:break-all;font-family:ui-monospace,monospace}
+.metrics{display:flex;flex-direction:column;gap:7px;margin-top:12px}
+.m{display:flex;justify-content:space-between;font-size:13px;gap:10px}
+.ml{color:var(--mut)}
+.mv{font-weight:600;text-align:right;word-break:break-word}
+.warnbox{display:flex;flex-direction:column;gap:8px}
+.warn{background:rgba(251,191,36,.07);border:1px solid rgba(251,191,36,.25);border-radius:10px;
+padding:10px 12px;font-size:13px;word-break:break-word}
+.wtag{display:inline-block;background:rgba(251,191,36,.18);color:var(--md);border-radius:6px;
+padding:1px 7px;font-size:11px;font-weight:700;margin-right:8px}
+.wunit{font-family:ui-monospace,monospace;font-size:12px;color:var(--mut);margin-right:8px}
+.ft{color:#4b5563;font-size:12px;text-align:center;margin-top:40px;padding-top:18px;border-top:1px solid var(--line)}
+@media (max-width:560px){.hero{padding:18px;gap:14px}.ovnum{font-size:36px}.mtot{margin-left:0}}
+@media print{body{background:#fff;color:#111}.hero,.card,.stat,.tablewrap,.markerpanel{background:#fff;border-color:#ccc}
+.results th{background:#eee;color:#333;position:static}.genome{color:#333;background:none}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hd">
+<div class="brand"><span class="logo">◇</span> Sentinel</div>
+<div class="sub">Bacterial genome quality report · 2026-10-12 · v0.2.0</div>
+</header>
+<div class="genome">checkm2_testdata/</div>
+<section class="hero overview">
+<div class="ovcount"><div class="ovnum">3</div><div class="ovlab">genomes</div></div>
+<div class="ovmain"><div class="ovtitle">CheckM2 quality</div><div class="mbar"><div class="seg t-hi" style="width:100.000%" title="High-quality: 3"></div></div><div class="mlegend"><span><i class="dot t-cp"></i>Complete <b>0</b></span><span><i class="dot t-hi"></i>High-quality <b>3</b></span><span><i class="dot t-md"></i>Medium-quality <b>0</b></span><span><i class="dot t-lo"></i>Low-quality <b>0</b></span><span><i class="dot t-nd"></i>Not-determined <b>0</b></span></div><div class="ovfoot">median completeness 98.97% (n=3) · median contamination 0.50% (n=3)</div></div>
+</section>
+<section class="stripwrap"><div class="strip">
+<div class="stat"><div class="snum">3</div><div class="slabel">Genomes</div></div>
+<div class="stat"><div class="snum">6805</div><div class="slabel">ORFs / genes</div></div>
+<div class="stat"><div class="snum">7.01 Mb</div><div class="slabel">Total length</div></div>
+<div class="stat"><div class="snum">5</div><div class="slabel">Contigs</div></div>
+<div class="stat"><div class="snum">4.91 Mb</div><div class="slabel">Contig N50</div></div>
+<div class="stat"><div class="snum">4.91 Mb</div><div class="slabel">Longest contig</div></div>
+<div class="stat"><div class="snum">48.05%</div><div class="slabel">GC content</div></div>
+<div class="stat"><div class="snum">88.6%</div><div class="slabel">Coding density</div></div>
+<div class="stat"><div class="snum">303.7</div><div class="slabel">Avg protein (aa)</div></div>
+</div></section>
+<h2 class="section">Results by genome <span class="hint">click a column to sort</span></h2>
+<div class="tablewrap"><table class="results sortable">
+<thead><tr><th>Genome</th><th class="n">Size</th><th class="n">Contigs</th><th class="n">N50</th><th class="n">GC %</th><th>CheckM2</th><th class="n">Compl. %</th><th class="n">Contam. %</th><th>Model</th><th class="n">SAGE discordant %</th><th class="n">Chimeric contigs</th><th class="n">Flags</th></tr></thead>
+<tbody>
+<tr><td class="id" data-v="TEST1"><span title="TEST1">TEST1</span></td><td class="n" data-v="5157999">5.16 Mb</td><td class="n" data-v="3">3</td><td class="n" data-v="4907118">4.91 Mb</td><td class="n" data-v="50.42">50.42</td><td data-v="3"><span class="qbadge xs b-hi">High-quality</span></td><td class="n" data-v="100">100.00</td><td class="n" data-v="0.76">0.76</td><td data-v="specific (NN)"><span title="Neural Network (Specific Model)">specific (NN)</span></td><td class="n" data-v="0">0.00</td><td class="n" data-v="0">0 / 3</td><td class="n" data-v="0"><span class="na">–</span></td></tr>
+<tr><td class="id" data-v="TEST2"><span title="TEST2">TEST2</span></td><td class="n" data-v="733750">733.8 kb</td><td class="n" data-v="1">1</td><td class="n" data-v="733750">733.8 kb</td><td class="n" data-v="33.9">33.90</td><td data-v="3"><span class="qbadge xs b-hi">High-quality</span></td><td class="n" data-v="98.97">98.97</td><td class="n" data-v="0.21">0.21</td><td data-v="specific (NN)"><span title="Neural Network (Specific Model)">specific (NN)</span></td><td class="n" data-v="-1"><span class="na">–</span></td><td class="n" data-v="0">0 / 1</td><td class="n" data-v="0"><span class="na">–</span></td></tr>
+<tr><td class="id" data-v="TEST3"><span title="TEST3">TEST3</span></td><td class="n" data-v="1118574">1.12 Mb</td><td class="n" data-v="1">1</td><td class="n" data-v="1118574">1.12 Mb</td><td class="n" data-v="46.37">46.37</td><td data-v="3"><span class="qbadge xs b-hi">High-quality</span></td><td class="n" data-v="98.76">98.76</td><td class="n" data-v="0.5">0.50</td><td data-v="specific (NN)"><span title="Neural Network (Specific Model)">specific (NN)</span></td><td class="n" data-v="-1"><span class="na">–</span></td><td class="n" data-v="0">0 / 1</td><td class="n" data-v="0"><span class="na">–</span></td></tr>
+</tbody></table></div>
+<h2 class="section">Validator details</h2>
+<div class="grid">
+<div class="card">
+<div class="chead"><span class="cname">CheckM2</span><span class="qbadge sm b-hi">High-quality</span></div>
+<div class="cunit">TEST1</div>
+<div class="metrics">
+<div class="m"><span class="ml">Completeness</span><span class="mv">100.00%</span></div>
+<div class="m"><span class="ml">Contamination</span><span class="mv">0.76%</span></div>
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">4873</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">Neural Network (Specific Model)</span></div>
+<div class="m"><span class="ml">completeness general</span><span class="mv">99.88</span></div>
+<div class="m"><span class="ml">kos annotated</span><span class="mv">2808</span></div>
+<div class="m"><span class="ml">completeness specific</span><span class="mv">100.0</span></div>
+<div class="m"><span class="ml">cosine similarity</span><span class="mv">1.0</span></div>
+<div class="m"><span class="ml">translation table</span><span class="mv">11</span></div>
+<div class="m"><span class="ml">coding density</span><span class="mv">0.874</span></div>
+</div>
+</div>
+<div class="card">
+<div class="chead"><span class="cname">SAGE</span></div>
+<div class="cunit">TEST1</div>
+<div class="metrics">
+<div class="m"><span class="ml">Contamination</span><span class="mv">0.00%</span></div>
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">4873</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">contig-composition (reference-free)</span></div>
+<div class="m"><span class="ml">contigs assessed</span><span class="mv">3</span></div>
+<div class="m"><span class="ml">discordant contigs</span><span class="mv">0</span></div>
+<div class="m"><span class="ml">discordant bp pct</span><span class="mv">0.00</span></div>
+<div class="m"><span class="ml">aa composition coherence</span><span class="mv">0.9401</span></div>
+<div class="m"><span class="ml">near identical protein pairs</span><span class="mv">360</span></div>
+</div>
+</div>
+<div class="card">
+<div class="chead"><span class="cname">CheckM2</span><span class="qbadge sm b-hi">High-quality</span></div>
+<div class="cunit">TEST2</div>
+<div class="metrics">
+<div class="m"><span class="ml">Completeness</span><span class="mv">98.97%</span></div>
+<div class="m"><span class="ml">Contamination</span><span class="mv">0.21%</span></div>
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">711</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">Neural Network (Specific Model)</span></div>
+<div class="m"><span class="ml">completeness general</span><span class="mv">98.19</span></div>
+<div class="m"><span class="ml">kos annotated</span><span class="mv">286</span></div>
+<div class="m"><span class="ml">completeness specific</span><span class="mv">98.97</span></div>
+<div class="m"><span class="ml">cosine similarity</span><span class="mv">0.95</span></div>
+<div class="m"><span class="ml">translation table</span><span class="mv">11</span></div>
+<div class="m"><span class="ml">coding density</span><span class="mv">0.936</span></div>
+</div>
+</div>
+<div class="card">
+<div class="chead"><span class="cname">SAGE</span></div>
+<div class="cunit">TEST2</div>
+<div class="metrics">
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">711</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">contig-composition (reference-free)</span></div>
+<div class="m"><span class="ml">contigs assessed</span><span class="mv">1</span></div>
+<div class="m"><span class="ml">discordant contigs</span><span class="mv">0</span></div>
+<div class="m"><span class="ml">aa composition coherence</span><span class="mv">0.9381</span></div>
+<div class="m"><span class="ml">near identical protein pairs</span><span class="mv">0</span></div>
+</div>
+</div>
+<div class="card">
+<div class="chead"><span class="cname">CheckM2</span><span class="qbadge sm b-hi">High-quality</span></div>
+<div class="cunit">TEST3</div>
+<div class="metrics">
+<div class="m"><span class="ml">Completeness</span><span class="mv">98.76%</span></div>
+<div class="m"><span class="ml">Contamination</span><span class="mv">0.50%</span></div>
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">1221</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">Neural Network (Specific Model)</span></div>
+<div class="m"><span class="ml">completeness general</span><span class="mv">97.55</span></div>
+<div class="m"><span class="ml">kos annotated</span><span class="mv">455</span></div>
+<div class="m"><span class="ml">completeness specific</span><span class="mv">98.76</span></div>
+<div class="m"><span class="ml">cosine similarity</span><span class="mv">0.98</span></div>
+<div class="m"><span class="ml">translation table</span><span class="mv">11</span></div>
+<div class="m"><span class="ml">coding density</span><span class="mv">0.908</span></div>
+</div>
+</div>
+<div class="card">
+<div class="chead"><span class="cname">SAGE</span></div>
+<div class="cunit">TEST3</div>
+<div class="metrics">
+<div class="m"><span class="ml">Genes / ORFs</span><span class="mv">1221</span></div>
+<div class="m"><span class="ml">Method</span><span class="mv">contig-composition (reference-free)</span></div>
+<div class="m"><span class="ml">contigs assessed</span><span class="mv">1</span></div>
+<div class="m"><span class="ml">discordant contigs</span><span class="mv">0</span></div>
+<div class="m"><span class="ml">aa composition coherence</span><span class="mv">0.9308</span></div>
+<div class="m"><span class="ml">near identical protein pairs</span><span class="mv">2</span></div>
+</div>
+</div>
+</div>
+
+<footer class="ft">Generated by Sentinel 0.2.0 · the TSV/JSON outputs hold every field</footer>
+</div>
+<script>
+document.querySelectorAll('table.sortable').forEach(function(t){
+  t.querySelectorAll('th').forEach(function(th,i){
+    th.addEventListener('click',function(){
+      var tb=t.tBodies[0], rows=Array.prototype.slice.call(tb.rows);
+      var dir=th.getAttribute('data-dir')==='asc'?'desc':'asc';
+      t.querySelectorAll('th').forEach(function(h){h.removeAttribute('data-dir');});
+      th.setAttribute('data-dir',dir);
+      var key=function(r){var c=r.cells[i];var v=c.hasAttribute('data-v')?c.getAttribute('data-v'):c.textContent.trim();
+        var n=parseFloat(v);return isNaN(n)?{s:v.toLowerCase()}:{n:n};};
+      rows.sort(function(a,b){var x=key(a),y=key(b),c;
+        if(x.n!==undefined&&y.n!==undefined){c=x.n-y.n;}
+        else if(x.n!==undefined){c=-1;} else if(y.n!==undefined){c=1;}
+        else{c=x.s<y.s?-1:(x.s>y.s?1:0);}
+        return dir==='asc'?c:-c;});
+      rows.forEach(function(r){tb.appendChild(r);});
+    });
+  });
+});
+</script>
+</body>
+</html>

@@ -9,7 +9,9 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$here"
 
 echo "[sentinel] building release binary..."
-cargo build --release -p sentinel-cli
+# single crate (sentinel-qc); --locked uses the tested dependency versions,
+# which build with rustc >= 1.75 (e.g. Ubuntu's apt cargo)
+"${CARGO:-cargo}" build --release --locked
 
 bin="$here/target/release/sentinel"
 [ -x "$bin" ] || { echo "build did not produce $bin" >&2; exit 1; }

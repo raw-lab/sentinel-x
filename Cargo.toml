@@ -1,30 +1,62 @@
-[workspace]
-resolver = "2"
-members = [
-    "vendor/dynamite-core",
-    "vendor/cleaver-core",
-    "vendor/hydra-mpp-core",
-    "vendor/rustyomestats",
-    "crates/sentinel-hmmer",
-    "crates/sentinel-gbm",
-    "crates/sentinel-core",
-    "crates/sentinel-checkv",
-    "crates/sentinel-checkm2",
-    "crates/sentinel-busco",
-    "crates/sentinel-viralverify",
-    "crates/sentinel-novel",
-    "crates/sentinel-gpu",
-    "crates/sentinel-db",
-    "crates/sentinel-cli",
-]
-
-[workspace.package]
-version = "0.1.0"
+[package]
+name = "sentinel-qc"
+version = "0.2.0"
 edition = "2021"
 rust-version = "1.75"
-license = "GPL-3.0-or-later"
+license = "CC-BY-NC-4.0"
 authors = ["Richard Allen White III <rwhit101@charlotte.edu>"]
+description = "Sentinel: unified, pure-Rust genome QC for viruses/phages, bacteria, archaea and eukaryotes (CheckV + CheckM2 + BUSCO + EukCC + viralVerify in one binary)."
 repository = "https://github.com/raw-lab/sentinel"
+readme = "README.md"
+keywords = ["bioinformatics", "genomics", "quality-control", "checkv", "checkm2"]
+categories = ["science", "command-line-utilities"]
+include = ["/src/**/*.rs", "/src/**/testdata/*", "/assets/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/VALIDATION.md", "/AUDIT.md", "/LICENSE*"]
+autobins = false
+autoexamples = false
+autotests = false
+autobenches = false
+
+# ONE crate: a single binary target and no library target, so cargo builds
+# exactly one crate (no separate lib + bin compilation units).
+[[bin]]
+name = "sentinel"
+path = "src/main.rs"
+
+[features]
+default = ["embed-models", "reads", "scale"]
+# Embed the CheckM2 LightGBM models (~11 MB) in the binary (no model download).
+embed-models = []
+# Large-input chunking via Cleaver-X.
+reads = ["dep:cleaver"]
+# `sentinel cluster-status` via HydraMPP.
+scale = ["dep:hydra-mpp"]
+# Cross-check assembly statistics (sequence count, length, base composition,
+# N50/L50) with the crates.io `rustyomestats` crate on every run.
+# rustyomestats 0.2.x declares rust-version 1.88 and hard-depends on
+# polars/plotters/rust-bio (~220 crates), so this feature needs rustc >= 1.88
+# (Ubuntu: `apt install rustc-1.89 cargo-1.89`). The default build computes
+# the same statistics in-house and builds on rustc 1.75.
+rustyomestats = ["dep:rustyomestats", "dep:bio"]
+
+[dependencies]
+anyhow = "1"
+# rayon is pinned to 1.10.x: rayon >= 1.11 needs rustc 1.80, and Cleaver-X
+# pins rayon =1.10.0 exactly.
+rayon = "~1.10"
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }   # JSON keeps field order
+flate2 = "1"            # default backend = miniz_oxide (pure Rust)
+tar = "0.4"
+sha2 = "0.10"
+md-5 = "0.10"           # Zenodo / BUSCO / Pfam publish MD5 checksums
+libc = "0.2"
+memmap2 = "0.9"         # DIAMOND .dmnd databases are read in place
+# RAW-lab crates from crates.io (replacing the former vendored copies)
+dynamite = { package = "dynamite-orfs", version = "1.0.1", default-features = false }
+cleaver = { package = "Cleaver-X", version = "1.0.1", default-features = false, features = ["gzip"], optional = true }
+hydra-mpp = { version = "1.0.0", default-features = false, optional = true }
+rustyomestats = { version = "0.2.1", optional = true }
+bio = { version = "2", optional = true }   # only to hand records to rustyomestats
 
 [profile.release]
 opt-level = 3

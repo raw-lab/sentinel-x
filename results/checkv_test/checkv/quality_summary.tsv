@@ -1,0 +1,2 @@
+contig_id	contig_length	provirus	proviral_length	gene_count	viral_genes	host_genes	checkv_quality	miuvig_quality	completeness	completeness_method	contamination	kmer_freq	warnings
+79b63289c8f743cc_1	499946	No	NA	673	96	30	Complete	High-quality	100.0	DTR (high-confidence)	0.0	1.0	
