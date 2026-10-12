@@ -1,6 +1,6 @@
-//! # sentinel-novel
+//! # Novel modules
 //!
-//! Three **reference-free** validators unique to Sentinel. Where CheckV,
+//! Three **reference-free** validators unique to Sentinel-X. Where CheckV,
 //! CheckM2 and BUSCO depend on large reference databases, these modules judge a
 //! contig purely from its own sequence and predicted genes, so they always run —
 //! even with no database installed:

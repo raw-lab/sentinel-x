@@ -7,7 +7,7 @@ use std::collections::HashSet;
 use std::io::{BufRead, BufReader, Read};
 use std::path::Path;
 
-/// The kingdom/domain a sequence is being validated as. Sentinel routes each
+/// The kingdom/domain a sequence is being validated as. Sentinel-X routes each
 /// contig to the appropriate validators based on this (a `Virus` goes to
 /// CheckV + viralVerify + TRACE; `Bacteria`/`Archaea` to CheckM2 + SAGE; a
 /// `Eukaryote` to EukCC/BUSCO).
@@ -161,7 +161,7 @@ pub fn read_fasta_reader<R: BufRead>(mut reader: R) -> Result<Vec<Contig>> {
         finish(h, seq, &mut contigs, lineno)?;
     }
     if skipped_empty > 0 {
-        eprintln!("[sentinel] skipped {skipped_empty} FASTA record(s) with an empty sequence");
+        eprintln!("[sentinel-x] skipped {skipped_empty} FASTA record(s) with an empty sequence");
     }
     Ok(contigs)
 }
@@ -206,7 +206,7 @@ mod tests {
     #[test]
     fn gzip_by_magic() {
         use std::io::Write;
-        let dir = std::env::temp_dir().join(format!("sentinel_gz_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sentinel_x_gz_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join("contigs.fasta"); // no .gz extension
         let mut enc = flate2::write::GzEncoder::new(Vec::new(), flate2::Compression::fast());

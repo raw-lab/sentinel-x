@@ -1,5 +1,5 @@
 """Bins + a synthetic KO-labelled DIAMOND database (CheckM2 header format
-`UniRef100_X~K00001`) for a CheckM2 vs Sentinel head-to-head."""
+`UniRef100_X~K00001`) for a CheckM2 vs Sentinel-X head-to-head."""
 import os, sys, json, random, subprocess
 random.seed(7)
 src, out, fo = sys.argv[1], sys.argv[2], sys.argv[3]

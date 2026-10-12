@@ -9,8 +9,8 @@ them before reuse.
 * `make_checkm2_db_realistic.py`, `run_checkm2_synthdb.py`, `make_checkm2_h2h.py`,
   `cmp_checkm2_vectors.py` — synthetic CheckM2 DIAMOND database, runs, vector comparison.
 * `make_checkm2_assets.py` — converts CheckM2's Keras model, scaler and reference
-  matrix into Sentinel's embedded `assets/checkm2/*.bin.z`.
+  matrix into Sentinel-X's embedded `assets/checkm2/*.bin.z`.
 * `make_mini_busco.py`, `make_mini_pfam.py`, `vv_classify_domtbl.py` — BUSCO/Pfam
   mini datasets and viralVerify's classifier on a given domain table.
 * `build_mirror.py`, `mirror_server.py` — local mirror of the database
-  upstreams for downloader tests (`SENTINEL_*_URL` overrides).
+  upstreams for downloader tests (`SENTINEL_X_*_URL` overrides).

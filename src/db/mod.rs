@@ -2,7 +2,7 @@
 //!
 //! The heavy reference databases are fetched from the same upstream sources
 //! the original tools use, verified, and installed atomically under one root
-//! (`--db`, else `$SENTINEL_DB`, else `~/.sentinel/db`):
+//! (`--db`, else `$SENTINEL_X_DB`, else `~/.sentinel-x/db`):
 //!
 //! | database | source | verification | layout |
 //! |---|---|---|---|
@@ -12,9 +12,9 @@
 //! | BUSCO   | `busco-data.ezlab.org/v5/data/file_versions.tsv` → `lineages/<name>.<date>.tar.gz` | MD5 from the manifest | `busco/lineages/<name>/` |
 //!
 //! Downloads land in `<root>/.staging/`, are verified and unpacked there, and
-//! are moved into place only when complete; a `.sentinel-complete.json`
+//! are moved into place only when complete; a `.sentinel-x-complete.json`
 //! marker (version, checksums) records a verified install. The DIAMOND
-//! databases are read in place by Sentinel's `protsearch` (no conversion, no
+//! databases are read in place by Sentinel-X's `protsearch` (no conversion, no
 //! DIAMOND binary).
 
 pub mod dmnd;
@@ -28,12 +28,12 @@ use anyhow::{anyhow, bail, Context, Result};
 /// `version_hashes_1.1.0.json`.
 pub const CHECKM2_DOI: &str = "10.5281/zenodo.14897628";
 pub const CHECKM2_DMND_SHA256: &str = "1b86ef3eac0813c1853f53182c17657045e3763d66f384ec95747261a63ae46f";
-const MARKER: &str = ".sentinel-complete.json";
+const MARKER: &str = ".sentinel-x-complete.json";
 
-/// The CheckM2 database hash to require; `SENTINEL_CHECKM2_SHA256`
+/// The CheckM2 database hash to require; `SENTINEL_X_CHECKM2_SHA256`
 /// overrides it (mirrors of other database releases, tests).
 pub fn expected_checkm2_sha256() -> String {
-    match std::env::var("SENTINEL_CHECKM2_SHA256") {
+    match std::env::var("SENTINEL_X_CHECKM2_SHA256") {
         Ok(v) if !v.trim().is_empty() => v.trim().to_ascii_lowercase(),
         _ => CHECKM2_DMND_SHA256.to_string(),
     }
@@ -117,20 +117,20 @@ impl Sources {
         }
     }
     pub fn checkv() -> String {
-        Self::env_or("SENTINEL_CHECKV_URL", "https://portal.nersc.gov/CheckV/")
+        Self::env_or("SENTINEL_X_CHECKV_URL", "https://portal.nersc.gov/CheckV/")
     }
     pub fn doi_resolver() -> String {
-        Self::env_or("SENTINEL_DOI_RESOLVER", "https://doi.org/")
+        Self::env_or("SENTINEL_X_DOI_RESOLVER", "https://doi.org/")
     }
     pub fn zenodo_api() -> String {
-        Self::env_or("SENTINEL_ZENODO_API", "https://zenodo.org/api/records/")
+        Self::env_or("SENTINEL_X_ZENODO_API", "https://zenodo.org/api/records/")
     }
     pub fn pfam() -> String {
-        Self::env_or("SENTINEL_PFAM_URL", "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/")
+        Self::env_or("SENTINEL_X_PFAM_URL", "https://ftp.ebi.ac.uk/pub/databases/Pfam/current_release/")
     }
     pub fn busco() -> Vec<String> {
-        match std::env::var("SENTINEL_BUSCO_URL") {
-            Ok(v) if !v.trim().is_empty() => vec![Self::env_or("SENTINEL_BUSCO_URL", "")],
+        match std::env::var("SENTINEL_X_BUSCO_URL") {
+            Ok(v) if !v.trim().is_empty() => vec![Self::env_or("SENTINEL_X_BUSCO_URL", "")],
             _ => vec!["https://busco-data.ezlab.org/v5/data/".into(), "https://busco-data2.ezlab.org/v5/data/".into()],
         }
     }
@@ -139,7 +139,7 @@ impl Sources {
 /// Installation status of one database.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub enum Status {
-    /// Present and verified by a Sentinel install marker.
+    /// Present and verified by a Sentinel-X install marker.
     Installed { detail: String },
     /// All required files are present but no install marker (placed by hand).
     Unverified { detail: String },
@@ -167,7 +167,7 @@ impl Status {
     }
 }
 
-/// The Sentinel database root directory.
+/// The Sentinel-X database root directory.
 #[derive(Clone, Debug)]
 pub struct DbRoot {
     pub root: PathBuf,
@@ -276,21 +276,21 @@ fn safe_name(s: &str) -> Result<String> {
 }
 
 impl DbRoot {
-    /// `~/.sentinel/db`.
+    /// `~/.sentinel-x/db`.
     pub fn default_root() -> PathBuf {
         match std::env::var_os("HOME") {
-            Some(h) if !h.is_empty() => PathBuf::from(h).join(".sentinel").join("db"),
-            _ => PathBuf::from(".sentinel").join("db"),
+            Some(h) if !h.is_empty() => PathBuf::from(h).join(".sentinel-x").join("db"),
+            _ => PathBuf::from(".sentinel-x").join("db"),
         }
     }
 
-    /// Resolve the DB root: explicit `path`, else `$SENTINEL_DB`, else
-    /// `~/.sentinel/db`.
+    /// Resolve the DB root: explicit `path`, else `$SENTINEL_X_DB`, else
+    /// `~/.sentinel-x/db`.
     pub fn resolve(path: Option<&str>) -> DbRoot {
         if let Some(p) = path {
             return DbRoot { root: PathBuf::from(p) };
         }
-        if let Ok(env) = std::env::var("SENTINEL_DB") {
+        if let Ok(env) = std::env::var("SENTINEL_X_DB") {
             if !env.trim().is_empty() {
                 return DbRoot { root: PathBuf::from(env) };
             }
@@ -492,15 +492,15 @@ impl DbRoot {
         )?;
         let archive = staging.join(format!("{rel}.tar.gz"));
         if !archive.is_file() {
-            eprintln!("[sentinel-db] downloading CheckV {rel}");
+            eprintln!("[sentinel-x db] downloading CheckV {rel}");
             download::fetch(&format!("{base}{rel}.tar.gz"), &archive)?;
         }
         let size = std::fs::metadata(&archive)?.len();
-        eprintln!("[sentinel-db] hashing {} ({} MB)", archive.display(), size >> 20);
+        eprintln!("[sentinel-x db] hashing {} ({} MB)", archive.display(), size >> 20);
         let sha = download::sha256_hex(&archive)?;
         let extract = staging.join("extract");
         let _ = std::fs::remove_dir_all(&extract);
-        eprintln!("[sentinel-db] extracting");
+        eprintln!("[sentinel-x db] extracting");
         if let Err(e) = download::extract_tar_gz(&archive, &extract) {
             let _ = std::fs::remove_file(&archive); // corrupt: force a fresh download next time
             return Err(e);
@@ -522,7 +522,7 @@ impl DbRoot {
                 "sha256": sha, "size": size, "source": base, "installed": now(),
             }),
         )?;
-        eprintln!("[sentinel-db] CheckV {rel} installed in {}", dest.display());
+        eprintln!("[sentinel-x db] CheckV {rel} installed in {}", dest.display());
         Ok(())
     }
 
@@ -539,7 +539,7 @@ impl DbRoot {
             let dest = staging.join(&f.name);
             for attempt in 0..2 {
                 if !dest.is_file() {
-                    eprintln!("[sentinel-db] downloading {} (Zenodo record {id})", f.name);
+                    eprintln!("[sentinel-x db] downloading {} (Zenodo record {id})", f.name);
                     download::fetch(&f.url, &dest)?;
                 }
                 match download::verify_checksum(&dest, &f.checksum) {
@@ -549,7 +549,7 @@ impl DbRoot {
                         if attempt == 1 {
                             return Err(e);
                         }
-                        eprintln!("[sentinel-db] {e}; downloading again");
+                        eprintln!("[sentinel-x db] {e}; downloading again");
                     }
                 }
             }
@@ -557,13 +557,13 @@ impl DbRoot {
         let extract = staging.join("extract");
         let _ = std::fs::remove_dir_all(&extract);
         for f in rec.files.iter().filter(|f| f.name.ends_with(".tar.gz")) {
-            eprintln!("[sentinel-db] extracting {}", f.name);
+            eprintln!("[sentinel-x db] extracting {}", f.name);
             download::extract_tar_gz(&staging.join(&f.name), &extract)?;
         }
         verify_backpack(&extract, &rec.version)?;
         let dmnd = find_file(&extract, "uniref100.KO.1.dmnd", 3)
             .ok_or_else(|| anyhow!("uniref100.KO.1.dmnd not found in the CheckM2 archive"))?;
-        eprintln!("[sentinel-db] verifying SHA-256 of {}", dmnd.display());
+        eprintln!("[sentinel-x db] verifying SHA-256 of {}", dmnd.display());
         let sha = download::sha256_hex(&dmnd)?;
         let expected = expected_checkm2_sha256();
         if sha != expected {
@@ -579,7 +579,7 @@ impl DbRoot {
                 "sha256": sha, "installed": now(),
             }),
         )?;
-        eprintln!("[sentinel-db] CheckM2 database installed in {}", dest.display());
+        eprintln!("[sentinel-x db] CheckM2 database installed in {}", dest.display());
         Ok(())
     }
 
@@ -597,7 +597,7 @@ impl DbRoot {
                         .unwrap_or_else(|| "unknown".into())
                 }
                 Err(e) => {
-                    eprintln!("[sentinel-db] (Pfam.version.gz unavailable: {e})");
+                    eprintln!("[sentinel-x db] (Pfam.version.gz unavailable: {e})");
                     "unknown".into()
                 }
             }
@@ -611,7 +611,7 @@ impl DbRoot {
         let gz = staging.join("Pfam-A.hmm.gz");
         for attempt in 0..2 {
             if !gz.is_file() {
-                eprintln!("[sentinel-db] downloading Pfam-A.hmm.gz (release {release})");
+                eprintln!("[sentinel-x db] downloading Pfam-A.hmm.gz (release {release})");
                 download::fetch(&format!("{base}Pfam-A.hmm.gz"), &gz)?;
             }
             match &md5 {
@@ -623,17 +623,17 @@ impl DbRoot {
                         if attempt == 1 {
                             return Err(e);
                         }
-                        eprintln!("[sentinel-db] {e}; downloading again");
+                        eprintln!("[sentinel-x db] {e}; downloading again");
                     }
                 },
                 None => {
-                    eprintln!("[sentinel-db] (no published MD5 found; integrity checked by decompression only)");
+                    eprintln!("[sentinel-x db] (no published MD5 found; integrity checked by decompression only)");
                     break;
                 }
             }
         }
         let hmm = staging.join("Pfam-A.hmm");
-        eprintln!("[sentinel-db] decompressing");
+        eprintln!("[sentinel-x db] decompressing");
         download::gunzip(&gz, &hmm)?;
         let mut head = [0u8; 6];
         use std::io::Read;
@@ -646,7 +646,7 @@ impl DbRoot {
             &self.dir(Database::Pfam),
             &serde_json::json!({"database": "pfam", "release": release, "md5": md5, "source": base, "installed": now()}),
         )?;
-        eprintln!("[sentinel-db] Pfam-A {release} installed");
+        eprintln!("[sentinel-x db] Pfam-A {release} installed");
         Ok(())
     }
 
@@ -657,7 +657,7 @@ impl DbRoot {
             match self.install_busco_from(staging, &lineage, &base) {
                 Ok(()) => return Ok(()),
                 Err(e) => {
-                    eprintln!("[sentinel-db] BUSCO mirror {base} failed: {e:#}");
+                    eprintln!("[sentinel-x db] BUSCO mirror {base} failed: {e:#}");
                     last_err = Some(e);
                 }
             }
@@ -684,7 +684,7 @@ impl DbRoot {
         let archive = staging.join(&file);
         for attempt in 0..3 {
             if !archive.is_file() {
-                eprintln!("[sentinel-db] downloading BUSCO {file}");
+                eprintln!("[sentinel-x db] downloading BUSCO {file}");
                 download::fetch(&format!("{base}lineages/{file}"), &archive)?;
             }
             match download::verify_checksum(&archive, &format!("md5:{md5}")) {
@@ -694,7 +694,7 @@ impl DbRoot {
                     if attempt == 2 {
                         return Err(e);
                     }
-                    eprintln!("[sentinel-db] {e}; downloading again");
+                    eprintln!("[sentinel-x db] {e}; downloading again");
                 }
             }
         }
@@ -715,7 +715,7 @@ impl DbRoot {
         )?;
         let dest = self.dir(Database::Busco).join("lineages").join(lineage);
         swap_into_place(&src, &dest)?;
-        eprintln!("[sentinel-db] BUSCO {lineage} ({date}) installed in {}", dest.display());
+        eprintln!("[sentinel-x db] BUSCO {lineage} ({date}) installed in {}", dest.display());
         Ok(())
     }
 
@@ -737,7 +737,7 @@ impl DbRoot {
             })
             .collect();
         let manifest = serde_json::json!({
-            "sentinel_db_version": 2,
+            "sentinel_x_db_version": 2,
             "root": self.root.to_string_lossy(),
             "databases": entries,
         });
@@ -767,7 +767,7 @@ pub fn verify_backpack(dir: &Path, record_version: &str) -> Result<()> {
             bail!("CONTENTS.json: unsafe path '{file}'");
         }
         let want = md5.as_str().ok_or_else(|| anyhow!("CONTENTS.json: bad checksum for {file}"))?;
-        eprintln!("[sentinel-db] verifying {file}");
+        eprintln!("[sentinel-x db] verifying {file}");
         download::verify_checksum(&dir.join(rel), &format!("md5:{want}"))?;
     }
     Ok(())
@@ -796,7 +796,7 @@ mod tests {
     #[test]
     fn resolve_order() {
         assert_eq!(DbRoot::resolve(Some("/x/db")).root, PathBuf::from("/x/db"));
-        assert!(DbRoot::default_root().ends_with(".sentinel/db"));
+        assert!(DbRoot::default_root().ends_with(".sentinel-x/db"));
     }
 
     fn fake_checkv(dir: &Path) {

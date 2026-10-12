@@ -1,16 +1,16 @@
 //! # CheckV 1.1.1, ported
 //!
 //! Viral genome quality following CheckV's `end_to_end` pipeline step by
-//! step, with Sentinel's own engines in place of the external tools:
+//! step, with Sentinel-X's own engines in place of the external tools:
 //!
 //! 1. **Gene annotation** ([`annotate`]) — every protein is searched against
-//!    each `hmm_db/checkv_hmms/*.hmm` file with Sentinel's HMMER 3.4 engine
+//!    each `hmm_db/checkv_hmms/*.hmm` file with Sentinel-X's HMMER 3.4 engine
 //!    (`hmmsearch -E 10`); a gene's best hit at `max(score_cutoff, 25)` bits
 //!    labels it viral (+1) or microbial (−1).
 //! 2. **Contamination** ([`regions`]) — host/virus boundaries from CheckV's
 //!    recursive breakpoint scan; contamination = host bp / contig bp.
 //! 3. **Completeness** — AAI-based (DIAMOND-compatible search of the
-//!    reference proteins with Sentinel's `protsearch`, CheckV's AAI and
+//!    reference proteins with Sentinel-X's `protsearch`, CheckV's AAI and
 //!    50%-of-top-hit weighting, error-table confidence) and HMM-based
 //!    (genome-length quantiles of the hit HMMs).
 //! 4. **Complete genomes** ([`repeats`]) — DTR/ITR detection with CheckV's
@@ -213,7 +213,7 @@ impl ContigResult {
     }
 }
 
-/// CheckV inputs from Sentinel's gene calls (pyrodigal-gv conventions:
+/// CheckV inputs from Sentinel-X's gene calls (pyrodigal-gv conventions:
 /// `<contig>_<n>` in coordinate order, `*`-terminated proteins).
 pub fn inputs_from_genes(contigs: &[Contig], gs: &GeneSet) -> Vec<ContigInput> {
     let per = gs.per_contig(contigs.len());

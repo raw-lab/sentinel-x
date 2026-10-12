@@ -1,5 +1,5 @@
 """Build a small CheckV database in the released layout from CheckV's own
-test contigs, so real CheckV 1.1.1 and Sentinel can be run head to head.
+test contigs, so real CheckV 1.1.1 and Sentinel-X can be run head to head.
 
   genome_db/checkv_reps.faa/.tsv/.dmnd, checkv_error.tsv
   hmm_db/checkv_hmms/{1,2,3}.hmm, checkv_hmms.tsv, genome_lengths.tsv

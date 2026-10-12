@@ -1,5 +1,5 @@
-//! `sentinel doctor` (environment and database diagnostics) and
-//! `sentinel download`.
+//! `sentinel-x doctor` (environment and database diagnostics) and
+//! `sentinel-x download`.
 
 use anyhow::{bail, Result};
 
@@ -13,7 +13,7 @@ fn take_value(args: &[String], i: &mut usize, flag: &str) -> Result<String> {
     }
 }
 
-/// Run `sentinel doctor [--db DIR] [--build] [--verify]`.
+/// Run `sentinel-x doctor [--db DIR] [--build] [--verify]`.
 pub fn run(args: &[String]) -> Result<()> {
     let mut db_path: Option<String> = None;
     let mut build = false;
@@ -25,7 +25,7 @@ pub fn run(args: &[String]) -> Result<()> {
             "--build" | "--build-db-dir" => build = true,
             "--verify" => verify = true,
             "-h" | "--help" => {
-                println!("usage: sentinel doctor [--db DIR] [--build] [--verify]\n");
+                println!("usage: sentinel-x doctor [--db DIR] [--build] [--verify]\n");
                 println!("  --build    create the database folder skeleton + manifest");
                 println!("  --verify   re-hash installed databases against their recorded checksums");
                 return Ok(());
@@ -36,10 +36,10 @@ pub fn run(args: &[String]) -> Result<()> {
     }
 
     println!("{}", crate::common::banner());
-    println!("Sentinel doctor — environment & database check\n");
+    println!("Sentinel-X doctor — environment & database check\n");
 
     println!("[ runtime ]");
-    println!("  sentinel version       {}", crate::common::VERSION);
+    println!("  sentinel-x version     {}", crate::common::VERSION);
     println!("  threads available      {}", std::thread::available_parallelism().map(|n| n.get()).unwrap_or(1));
     match download::fetcher_available() {
         Some(t) => println!("  database downloader    {t} (found)"),
@@ -63,7 +63,7 @@ pub fn run(args: &[String]) -> Result<()> {
         println!("  (created folder skeleton + manifest.json)");
     }
     if !root.root.exists() {
-        println!("  status                 root does not exist — run `sentinel doctor --build` or `sentinel download <db>`");
+        println!("  status                 root does not exist — run `sentinel-x doctor --build` or `sentinel-x download <db>`");
     }
     let mut ready = 0;
     for (db, st) in root.status_all() {
@@ -116,8 +116,8 @@ pub fn run(args: &[String]) -> Result<()> {
     println!("  {:<44} needs a marker set: --markers <set.hmm>", "EukCC (eukaryotes)");
     println!("  {:<44} READY    (database-free)", "Novel modules (TRACE / CHIMERA-SCAN / SAGE)");
     println!(
-        "\nSummary: {ready}/{} reference databases usable. Fetch them with `sentinel download all` \
-         (add --lineage <name> for BUSCO) or `sentinel download <{}>`.",
+        "\nSummary: {ready}/{} reference databases usable. Fetch them with `sentinel-x download all` \
+         (add --lineage <name> for BUSCO) or `sentinel-x download <{}>`.",
         Database::all().len(),
         Database::all().iter().map(|d| d.id()).collect::<Vec<_>>().join("|")
     );
@@ -128,11 +128,11 @@ fn line(label: &str, ready: bool, note: &str) {
     println!("  {:<44} {}   ({})", label, if ready { "READY   " } else { "needs DB" }, note);
 }
 
-/// `sentinel download <db|all> [--db DIR] [--lineage NAME]`
+/// `sentinel-x download <db|all> [--db DIR] [--lineage NAME]`
 pub fn download_cmd(args: &[String]) -> Result<()> {
     let ids: Vec<&str> = Database::all().iter().map(|d| d.id()).collect();
     if args.is_empty() || args.iter().any(|a| a == "-h" || a == "--help") {
-        println!("usage: sentinel download <all|{}> [--db DIR] [--lineage NAME]", ids.join("|"));
+        println!("usage: sentinel-x download <all|{}> [--db DIR] [--lineage NAME]", ids.join("|"));
         println!("\n  BUSCO lineages are named as in BUSCO's file_versions.tsv, e.g. bacteria_odb12.2");
         if args.is_empty() {
             bail!("no database given");
@@ -161,7 +161,7 @@ pub fn download_cmd(args: &[String]) -> Result<()> {
         return download_all(&root, &lineages);
     }
     if target == "kofam" {
-        bail!("KOfam is no longer used: CheckM2 annotates KOs with its own DIAMOND database (`sentinel download checkm2`)");
+        bail!("KOfam is no longer used: CheckM2 annotates KOs with its own DIAMOND database (`sentinel-x download checkm2`)");
     }
     let db = Database::parse(&target)
         .ok_or_else(|| anyhow::anyhow!("unknown database '{}' (expected: all|{})", target, ids.join("|")))?;

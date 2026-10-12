@@ -148,7 +148,7 @@ impl Lineage {
                 }
             }
         }
-        bail!("BUSCO lineage '{spec}' not found (give a dataset directory or run `sentinel download busco --lineage {spec}`)")
+        bail!("BUSCO lineage '{spec}' not found (give a dataset directory or run `sentinel-x download busco --lineage {spec}`)")
     }
 }
 

@@ -1,4 +1,4 @@
-//! The `sentinel run` pipeline: read contigs, call genes, route the input
+//! The `sentinel-x run` pipeline: read contigs, call genes, route the input
 //! to the validators for its domain, and write the unified report plus each
 //! tool's own output tables.
 //!
@@ -76,53 +76,53 @@ fn read_inputs(opts: &Options) -> Result<Vec<Genome>> {
             contigs.retain(|c| c.len() >= opts.min_len);
         }
         if contigs.len() < before {
-            eprintln!("[sentinel] {}: {} of {} contigs pass --min-len {}", f.display(), contigs.len(), before, opts.min_len);
+            eprintln!("[sentinel-x] {}: {} of {} contigs pass --min-len {}", f.display(), contigs.len(), before, opts.min_len);
         }
         out.push(Genome { name: genome_name(&f), path: f, contigs });
     }
     Ok(out)
 }
 
-/// Entry point for `sentinel run`.
+/// Entry point for `sentinel-x run`.
 pub fn run(opts: Options) -> Result<()> {
     eprintln!("{}", crate::common::banner());
     init_threads(opts.threads);
     let dbroot = DbRoot::resolve(opts.db_root.as_deref());
     if dbroot.root.is_dir() {
-        eprintln!("[sentinel] database root: {}", dbroot.root.display());
+        eprintln!("[sentinel-x] database root: {}", dbroot.root.display());
         for (db, st) in dbroot.status_all() {
-            eprintln!("[sentinel]   {:<8} {}", db.id(), st.symbol());
+            eprintln!("[sentinel-x]   {:<8} {}", db.id(), st.symbol());
         }
     } else {
         eprintln!(
-            "[sentinel] no database root at {} (set --db or $SENTINEL_DB); database-backed validators are skipped",
+            "[sentinel-x] no database root at {} (set --db or $SENTINEL_X_DB); database-backed validators are skipped",
             dbroot.root.display()
         );
     }
     if opts.gpu {
-        eprintln!("[sentinel] note: --gpu has no effect (no GPU kernels are used); running on CPU");
+        eprintln!("[sentinel-x] note: --gpu has no effect (no GPU kernels are used); running on CPU");
     }
     let genomes = read_inputs(&opts)?;
     let n_contigs: usize = genomes.iter().map(|g| g.contigs.len()).sum();
     if n_contigs == 0 {
         bail!("no contigs to analyse");
     }
-    eprintln!("[sentinel] {} input file(s), {} contigs; domain {}", genomes.len(), n_contigs, opts.domain.label());
+    eprintln!("[sentinel-x] {} input file(s), {} contigs; domain {}", genomes.len(), n_contigs, opts.domain.label());
 
     // options that do not apply to the chosen domain
     let per_contig = matches!(opts.domain, Domain::Virus | Domain::Mixed);
     if opts.markers.is_some() && opts.domain != Domain::Eukaryote {
-        eprintln!("[sentinel] warning: --markers (EukCC) is only used with -d eukaryote");
+        eprintln!("[sentinel-x] warning: --markers (EukCC) is only used with -d eukaryote");
     }
     if opts.lineage.is_some() && per_contig {
-        eprintln!("[sentinel] warning: --lineage (BUSCO) is only used for genome-level domains (bacteria, archaea, eukaryote)");
+        eprintln!("[sentinel-x] warning: --lineage (BUSCO) is only used for genome-level domains (bacteria, archaea, eukaryote)");
     }
     if opts.viralverify && !per_contig {
-        eprintln!("[sentinel] warning: --viralverify is only used with -d virus or -d mixed");
+        eprintln!("[sentinel-x] warning: --viralverify is only used with -d virus or -d mixed");
     }
     if opts.min_len > 0 && !per_contig {
         eprintln!(
-            "[sentinel] note: --min-len {} removes contigs before CheckM2/BUSCO/EukCC (CheckM2 itself uses every contig)",
+            "[sentinel-x] note: --min-len {} removes contigs before CheckM2/BUSCO/EukCC (CheckM2 itself uses every contig)",
             opts.min_len
         );
     }
@@ -133,7 +133,7 @@ pub fn run(opts: Options) -> Result<()> {
     #[cfg(feature = "rustyomestats")]
     {
         if per_contig && opts.chunk_size.is_some() {
-            eprintln!("[sentinel] rustyomestats cross-check skipped with --chunk-size (needs whole files)");
+            eprintln!("[sentinel-x] rustyomestats cross-check skipped with --chunk-size (needs whole files)");
         } else if !opts.genes {
             for g in &genomes {
                 crate::common::xstats::crosscheck(&g.name, &g.contigs);
@@ -165,7 +165,7 @@ pub fn run(opts: Options) -> Result<()> {
         let mut cm2 = Checkm2Context::new(&opts)?;
         for g in &genomes {
             if g.contigs.is_empty() {
-                eprintln!("[sentinel] {}: no contigs, skipped", g.name);
+                eprintln!("[sentinel-x] {}: no contigs, skipped", g.name);
                 continue;
             }
             let gs = run_genome(g, &opts, &dbroot, &mut report, &mut cm2, &mut cm2_results)?;
@@ -180,13 +180,13 @@ pub fn run(opts: Options) -> Result<()> {
             let dir = Path::new(d).join("checkm2");
             std::fs::create_dir_all(&dir)?;
             std::fs::write(dir.join("quality_report.tsv"), crate::checkm2::quality_report_tsv(&cm2_results))?;
-            eprintln!("[sentinel] wrote {}", dir.join("quality_report.tsv").display());
+            eprintln!("[sentinel-x] wrote {}", dir.join("quality_report.tsv").display());
         }
     }
 
     write_outputs(&opts, &report, &stats, &per_genome)?;
     let complete = report.records.iter().filter(|r| r.quality == Quality::Complete).count();
-    eprintln!("[sentinel] done — {} records, {} flagged Complete", report.records.len(), complete);
+    eprintln!("[sentinel-x] done — {} records, {} flagged Complete", report.records.len(), complete);
     Ok(())
 }
 
@@ -195,33 +195,33 @@ pub fn run(opts: Options) -> Result<()> {
 fn run_per_contig(contigs: &[Contig], opts: &Options, dbroot: &DbRoot, report: &mut QcReport, first: bool) -> Result<GeneSet> {
     // ---- genes (prodigal-gv preset, or supplied proteins)
     let gs = call_genes(contigs, opts.domain, opts.threads)?;
-    eprintln!("[sentinel] {} genes called (DYNAMITE prodigal-gv preset, translation table {})", gs.genes.len(), gs.trans_table);
+    eprintln!("[sentinel-x] {} genes called (DYNAMITE prodigal-gv preset, translation table {})", gs.genes.len(), gs.trans_table);
 
     // ---- CheckV
     let checkv_db = match dbroot.checkv_dir() {
         Some(d) => match crate::checkv::CheckvDb::load(&d) {
             Ok(db) => {
-                eprintln!("[sentinel] CheckV database: {} ({} HMM files)", d.display(), db.hmm_files.len());
+                eprintln!("[sentinel-x] CheckV database: {} ({} HMM files)", d.display(), db.hmm_files.len());
                 Some(db)
             }
             Err(e) => {
-                eprintln!("[sentinel] CheckV database at {} unusable: {e:#}", d.display());
+                eprintln!("[sentinel-x] CheckV database at {} unusable: {e:#}", d.display());
                 None
             }
         },
         None => {
-            eprintln!("[sentinel] no CheckV database: terminal repeats and copy number only (`sentinel download checkv`)");
+            eprintln!("[sentinel-x] no CheckV database: terminal repeats and copy number only (`sentinel-x download checkv`)");
             None
         }
     };
     let inputs = match &opts.proteins {
         Some(faa) => {
-            eprintln!("[sentinel] CheckV: using proteins from {faa}");
+            eprintln!("[sentinel-x] CheckV: using proteins from {faa}");
             crate::checkv::inputs_from_faa(contigs, Path::new(faa))?
         }
         None => crate::checkv::inputs_from_genes(contigs, &gs),
     };
-    eprintln!("[sentinel] CheckV: annotating, scanning host regions and estimating completeness");
+    eprintln!("[sentinel-x] CheckV: annotating, scanning host regions and estimating completeness");
     let params = crate::checkv::Params { strict_diamond_order: opts.checkv_strict, ..Default::default() };
     let results = crate::checkv::run(&inputs, checkv_db.as_ref(), &params)?;
     report.extend(crate::checkv::to_records(&results, opts.domain, checkv_db.is_some()));
@@ -229,7 +229,7 @@ fn run_per_contig(contigs: &[Contig], opts: &Options, dbroot: &DbRoot, report: &
         let dir = Path::new(d).join("checkv");
         crate::checkv::report::write_all(&dir, &results, checkv_db.is_some(), !first)?;
         if first {
-            eprintln!("[sentinel] writing CheckV tables to {}", dir.display());
+            eprintln!("[sentinel-x] writing CheckV tables to {}", dir.display());
         }
     }
 
@@ -255,7 +255,7 @@ fn run_per_contig(contigs: &[Contig], opts: &Options, dbroot: &DbRoot, report: &
     if opts.viralverify {
         match dbroot.pfam_hmm() {
             Some(pfam) => {
-                eprintln!("[sentinel] viralVerify: Pfam-A search ({})", pfam.display());
+                eprintln!("[sentinel-x] viralVerify: Pfam-A search ({})", pfam.display());
                 let table = crate::viralverify::ClassifierTable::embedded();
                 let verdicts = crate::viralverify::run(contigs, &pfam, opts.threads, 7.0, &table)?;
                 report.extend(crate::viralverify::to_records(&verdicts, opts.domain));
@@ -267,7 +267,7 @@ fn run_per_contig(contigs: &[Contig], opts: &Options, dbroot: &DbRoot, report: &
                     append_or_write(&dir.join(format!("{stem}_result_table.csv")), &csv, !first)?;
                 }
             }
-            None => eprintln!("[sentinel] viralVerify skipped: no Pfam-A library (`sentinel download pfam`)"),
+            None => eprintln!("[sentinel-x] viralVerify skipped: no Pfam-A library (`sentinel-x download pfam`)"),
         }
     }
     Ok(gs)
@@ -404,7 +404,7 @@ fn run_genome(
         return run_genome_proteins(g, opts, dbroot, report, cm2, cm2_results);
     }
     eprintln!(
-        "[sentinel] genome {} ({} contig{}, {} bp)",
+        "[sentinel-x] genome {} ({} contig{}, {} bp)",
         g.name,
         g.contigs.len(),
         if g.contigs.len() == 1 { "" } else { "s" },
@@ -415,7 +415,7 @@ fn run_genome(
     let (gs, calls) = if prokaryote {
         let calls = crate::checkm2::call_genes(&g.contigs, opts.threads, opts.ttable)?;
         eprintln!(
-            "[sentinel]   {} genes (Prodigal-style {} mode, translation table {}, coding density {:.3})",
+            "[sentinel-x]   {} genes (Prodigal-style {} mode, translation table {}, coding density {:.3})",
             calls.genes.genes.len(),
             calls.procedure,
             calls.ttable,
@@ -424,7 +424,7 @@ fn run_genome(
         (calls.genes.clone(), Some(calls))
     } else {
         let gs = call_genes(&g.contigs, opts.domain, opts.threads)?;
-        eprintln!("[sentinel]   {} genes", gs.genes.len());
+        eprintln!("[sentinel-x]   {} genes", gs.genes.len());
         (gs, None)
     };
 
@@ -442,7 +442,7 @@ fn run_genome(
                 report.push(crate::checkm2::to_record(&r, total_len, opts.domain));
                 cm2_results.push(r);
             }
-            Err(e) => eprintln!("[sentinel]   CheckM2 failed: {e:#}"),
+            Err(e) => eprintln!("[sentinel-x]   CheckM2 failed: {e:#}"),
         }
     }
 
@@ -466,7 +466,7 @@ fn run_genome(
                 let targets = crate::hmmer::Targets::from_pairs(&prots);
                 let s = crate::eukcc::run(&targets, Path::new(m))?;
                 eprintln!(
-                    "[sentinel]   EukCC: completeness {} contamination {} ({}/{} markers, {} multi-copy)",
+                    "[sentinel-x]   EukCC: completeness {} contamination {} ({}/{} markers, {} multi-copy)",
                     s.completeness, s.contamination, s.markers_found, s.markers_expected, s.markers_multicopy
                 );
                 let mut rec = QcRecord::new(&g.name, total_len, opts.domain, "eukcc");
@@ -488,7 +488,7 @@ fn run_genome(
                 }
                 report.push(rec);
             }
-            None => eprintln!("[sentinel]   EukCC needs a marker set (--markers <set.hmm>)"),
+            None => eprintln!("[sentinel-x]   EukCC needs a marker set (--markers <set.hmm>)"),
         }
     }
 
@@ -503,9 +503,9 @@ fn run_genome(
             .iter()
             .map(|x| crate::busco::BuscoGene::new(&x.contig, x.begin, x.end, x.strand, x.protein_with_stop()))
             .collect();
-        eprintln!("[sentinel]   BUSCO {} ({} BUSCOs)", lineage.name, lineage.total());
+        eprintln!("[sentinel-x]   BUSCO {} ({} BUSCOs)", lineage.name, lineage.total());
         let s = crate::busco::run(&lineage, &genes, true)?;
-        eprintln!("[sentinel]   BUSCO: {}", s.one_line());
+        eprintln!("[sentinel-x]   BUSCO: {}", s.one_line());
         report.push(crate::busco::to_record(&g.name, total_len, opts.domain, gs.genes.len(), &s));
         if let Some(d) = &opts.outdir {
             let dir = Path::new(d).join("busco").join(&g.name);
@@ -546,7 +546,7 @@ fn lineage_domain_check(l: &crate::busco::Lineage, d: Domain) {
         _ => return,
     };
     if !l.domain.is_empty() && !l.domain.eq_ignore_ascii_case(want) {
-        eprintln!("[sentinel]   warning: BUSCO lineage {} is for {}, the input is {}", l.name, l.domain, d.label());
+        eprintln!("[sentinel-x]   warning: BUSCO lineage {} is for {}, the input is {}", l.name, l.domain, d.label());
     }
 }
 
@@ -582,7 +582,7 @@ fn run_genome_proteins(
 ) -> Result<GeneSet> {
     let proteins: Vec<(String, Vec<u8>)> = g.contigs.iter().map(|c| (c.id.clone(), c.seq.clone())).collect();
     let aa_total: usize = proteins.iter().map(|p| p.1.len()).sum();
-    eprintln!("[sentinel] genome {} ({} proteins, {} residues)", g.name, proteins.len(), aa_total);
+    eprintln!("[sentinel-x] genome {} ({} proteins, {} residues)", g.name, proteins.len(), aa_total);
     let genes: Vec<crate::common::Gene> = proteins
         .iter()
         .enumerate()
@@ -610,7 +610,7 @@ fn run_genome_proteins(
                 report.push(crate::checkm2::to_record(&r, 0, opts.domain));
                 cm2_results.push(r);
             }
-            Err(e) => eprintln!("[sentinel]   CheckM2 failed: {e:#}"),
+            Err(e) => eprintln!("[sentinel-x]   CheckM2 failed: {e:#}"),
         }
     }
     if opts.novel {
@@ -645,7 +645,7 @@ fn run_genome_proteins(
             })
             .collect();
         let s = crate::busco::run(&lineage, &genes, false)?;
-        eprintln!("[sentinel]   BUSCO (proteins): {}", s.one_line());
+        eprintln!("[sentinel-x]   BUSCO (proteins): {}", s.one_line());
         report.push(crate::busco::to_record(&g.name, 0, opts.domain, proteins.len(), &s));
         if let Some(d) = &opts.outdir {
             let dir = Path::new(d).join("busco").join(&g.name);
@@ -676,12 +676,12 @@ fn checkm2_genome(
     } else {
         match dbroot.checkm2_db() {
             Some(db) => {
-                eprintln!("[sentinel]   CheckM2: annotating {} proteins against {}", proteins.len(), db.display());
+                eprintln!("[sentinel-x]   CheckM2: annotating {} proteins against {}", proteins.len(), db.display());
                 let (k, st) = crate::checkm2::annotate_kos(&proteins, &db)?;
-                eprintln!("[sentinel]   CheckM2: {} proteins with a KO hit ({} reference letters)", st.hits, st.db_letters);
+                eprintln!("[sentinel-x]   CheckM2: {} proteins with a KO hit ({} reference letters)", st.hits, st.db_letters);
                 (k, format!("DIAMOND-compatible search of {}", db.file_name().and_then(|s| s.to_str()).unwrap_or("db")))
             }
-            None => (HashMap::new(), "CheckM2 database not installed (`sentinel download checkm2`)".into()),
+            None => (HashMap::new(), "CheckM2 database not installed (`sentinel-x download checkm2`)".into()),
         }
     };
     let ko = fs.ko_counts(kos.iter().map(|(k, &n)| (k.as_str(), n)));
@@ -690,7 +690,7 @@ fn checkm2_genome(
     let features = fs.build_vector(&fs.metadata(&plain), &ko);
     let prediction = crate::checkm2::predict(&features, models, cm2.nn.as_ref());
     // validation aid: dump the feature vector and raw predictions
-    if let Ok(dir) = std::env::var("SENTINEL_CHECKM2_DEBUG") {
+    if let Ok(dir) = std::env::var("SENTINEL_X_CHECKM2_DEBUG") {
         let dir = Path::new(&dir);
         std::fs::create_dir_all(dir)?;
         let mut t = String::new();
@@ -711,7 +711,7 @@ fn checkm2_genome(
         )?;
     }
     eprintln!(
-        "[sentinel]   CheckM2: completeness {:.2} ({}), contamination {:.2}",
+        "[sentinel-x]   CheckM2: completeness {:.2} ({}), contamination {:.2}",
         prediction.completeness, prediction.model, prediction.contamination
     );
     Ok(crate::checkm2::Checkm2Result { name: name.to_string(), prediction, stats, kos_annotated, ko_source: source })
@@ -741,14 +741,14 @@ fn run_chunked(opts: &Options, dbroot: &DbRoot, report: &mut QcReport, stats: &m
     if input.is_dir() {
         bail!("--chunk-size needs a single FASTA file");
     }
-    let dest = std::env::temp_dir().join(format!("sentinel_chunks_{}", std::process::id()));
+    let dest = std::env::temp_dir().join(format!("sentinel_x_chunks_{}", std::process::id()));
     let cfg = cleaver::Config {
         chunk_size: size,
         mode: cleaver::Mode::Delimiter { delim: b">".to_vec(), matching: cleaver::Match::StartsWith },
     };
     let res = (|| -> Result<()> {
         let split = cleaver::chunk_file(input, &dest, &cfg).context("chunking input with Cleaver-X")?;
-        eprintln!("[sentinel] Cleaver-X split the input into {} chunk(s)", split.chunks.len());
+        eprintln!("[sentinel-x] Cleaver-X split the input into {} chunk(s)", split.chunks.len());
         let mut seen: std::collections::HashSet<String> = std::collections::HashSet::new();
         for (i, chunk) in split.chunks.iter().enumerate() {
             let mut contigs = read_fasta(chunk)?;
@@ -763,7 +763,7 @@ fn run_chunked(opts: &Options, dbroot: &DbRoot, report: &mut QcReport, stats: &m
             if contigs.is_empty() {
                 continue;
             }
-            eprintln!("[sentinel] chunk {}/{}: {} contigs", i + 1, split.chunks.len(), contigs.len());
+            eprintln!("[sentinel-x] chunk {}/{}: {} contigs", i + 1, split.chunks.len(), contigs.len());
             let gs = run_per_contig(&contigs, opts, dbroot, report, stats.contigs == 0)?;
             stats.add(&contigs, &gs);
         }
@@ -859,7 +859,7 @@ fn write_outputs(
     match opts.output.as_deref() {
         Some(path) if path != "-" => {
             std::fs::write(path, &tsv).with_context(|| format!("writing '{path}'"))?;
-            eprintln!("[sentinel] wrote {} records to {path}", report.records.len());
+            eprintln!("[sentinel-x] wrote {} records to {path}", report.records.len());
         }
         _ => {
             let mut out = std::io::stdout().lock();
@@ -869,7 +869,7 @@ fn write_outputs(
     if let Some(jpath) = &opts.json {
         std::fs::write(jpath, serde_json::to_string_pretty(&report_to_json(report))?)
             .with_context(|| format!("writing JSON '{jpath}'"))?;
-        eprintln!("[sentinel] wrote JSON report to {jpath}");
+        eprintln!("[sentinel-x] wrote JSON report to {jpath}");
     }
     // HTML: --html, else next to -o (never over the table or the JSON, never
     // for special files)
@@ -895,7 +895,7 @@ fn write_outputs(
         }
         let html = crate::html_report::render(report, &opts.input, opts.domain, &stats.table(), per_genome);
         std::fs::write(&hpath, html).with_context(|| format!("writing HTML '{hpath}'"))?;
-        eprintln!("[sentinel] wrote HTML report to {hpath}");
+        eprintln!("[sentinel-x] wrote HTML report to {hpath}");
     }
     Ok(())
 }
@@ -925,7 +925,7 @@ fn report_to_json(report: &QcReport) -> serde_json::Value {
             })
         })
         .collect();
-    serde_json::json!({ "sentinel_version": crate::common::VERSION, "records": recs })
+    serde_json::json!({ "sentinel_x_version": crate::common::VERSION, "records": recs })
 }
 
 #[cfg(test)]

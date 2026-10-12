@@ -1,10 +1,10 @@
-//! # sentinel-gbm
+//! # LightGBM evaluator
 //!
 //! A pure-Rust loader and evaluator for **LightGBM text models** — the exact
 //! `.gbm` files CheckM2 ships (`general_model_COMP.gbm`, `model_CONT.gbm`).
 //! It parses the model into flat decision-tree arrays and reproduces LightGBM's
 //! prediction without any Python, C LightGBM, or FFI, so CheckM2-style
-//! completeness/contamination inference runs entirely inside Sentinel.
+//! completeness/contamination inference runs entirely inside Sentinel-X.
 //!
 //! The supported model dialect is the one CheckM2 uses: dense numerical
 //! features, `decision_type = 2` (numerical `<=` split, default-left on

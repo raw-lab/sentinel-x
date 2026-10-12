@@ -124,7 +124,7 @@ impl SpecificModel {
     pub fn parse(model_z: &[u8], ref_z: &[u8]) -> Result<SpecificModel> {
         let raw = inflate(model_z)?;
         if raw.get(..4) != Some(b"SNN1") {
-            bail!("not a Sentinel CheckM2 network asset");
+            bail!("not a Sentinel-X CheckM2 network asset");
         }
         let mut r = Reader { b: &raw, p: 4 };
         let mut convs = Vec::new();
@@ -172,7 +172,7 @@ impl SpecificModel {
         // reference set
         let raw = inflate(ref_z)?;
         if raw.get(..5) != Some(b"SREF1") {
-            bail!("not a Sentinel CheckM2 reference asset");
+            bail!("not a Sentinel-X CheckM2 reference asset");
         }
         let mut r = Reader { b: &raw, p: 5 };
         let rows = r.u32()? as usize;

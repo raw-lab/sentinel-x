@@ -15,29 +15,28 @@ network, the MinMaxScaler and the reference matrix were converted to a flat
 little-endian layout by `scripts/validation/make_checkm2_assets.py`, with no
 change to any value.
 
-## Provenance and license
+## Provenance
 
-These models are the work of the CheckM2 authors, not of Sentinel:
+These models are the work of the CheckM2 authors, not of Sentinel-X. Please
+cite CheckM2 when you use Sentinel-X's CheckM2 results:
 
 > Chklovski, A., Parks, D.H., Woodcroft, B.J. & Tyson, G.W. (2023).
 > *CheckM2: a rapid, scalable and accurate tool for assessing microbial genome
 > quality using machine learning.* Nature Methods 20, 1203–1212.
 > Source: https://github.com/chklovski/CheckM2
 
-CheckM2 is licensed GPL-3.0, and these files are redistributed under the
-GPL-3.0. If you redistribute Sentinel, keep this attribution and the GPL-3.0
-terms (see AUDIT.md §6 for the license question raised by Sentinel's
-CC-BY-NC-4.0 dependencies).
+Sentinel-X is distributed under CC-BY-NC-4.0; see the `LICENSE` file at the
+repository root.
 
-Without `embed-models`, Sentinel has no specific model. It then reports the
+Without `embed-models`, Sentinel-X has no specific model. It then reports the
 general model only, from LightGBM files passed with `--checkm2-comp` and
 `--checkm2-cont`.
 
 ## KO annotations
 
 The models predict from CheckM2's 21,241-feature vector, and most of those
-features are KO counts. Sentinel annotates KOs with its DIAMOND-compatible
-search against CheckM2's own database (`sentinel download checkm2`), or
+features are KO counts. Sentinel-X annotates KOs with its DIAMOND-compatible
+search against CheckM2's own database (`sentinel-x download checkm2`), or
 reads them from `--ko`. Without KO annotations, completeness and
 contamination are reported as NA, and the metadata-only predictions are kept
 in the extra column.

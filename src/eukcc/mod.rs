@@ -122,7 +122,7 @@ mod tests {
 
     #[test]
     fn missing_ga_is_an_error() {
-        let dir = std::env::temp_dir().join(format!("sentinel_eukcc_{}", std::process::id()));
+        let dir = std::env::temp_dir().join(format!("sentinel_x_eukcc_{}", std::process::id()));
         std::fs::create_dir_all(&dir).unwrap();
         let p = dir.join("m.hmm");
         let with_ga = include_str!("../hmmer/testdata/tiny.hmm");

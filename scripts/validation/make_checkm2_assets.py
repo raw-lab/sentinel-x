@@ -1,5 +1,5 @@
 """Convert CheckM2 1.1.0's specific model, scaler and reference data into
-Sentinel's compact embedded assets.
+Sentinel-X's compact embedded assets.
 
   specific_model.bin.z : 4x(Conv1D W,b; BN gamma,beta,mean,var), 2x Dense W,b,
                          then the MinMaxScaler scale_ and min_ (all 21,241)

@@ -189,7 +189,7 @@ pub fn run(contigs: &[Contig], pfam: &Path, threads: usize, thr: f64, table: &Cl
     }
 
     // validation aid: the proteins as searched
-    if let Ok(path) = std::env::var("SENTINEL_VIRALVERIFY_PROTEINS") {
+    if let Ok(path) = std::env::var("SENTINEL_X_VIRALVERIFY_PROTEINS") {
         let mut t = String::new();
         for (id, p) in ids.iter().zip(&prots) {
             t.push('>');

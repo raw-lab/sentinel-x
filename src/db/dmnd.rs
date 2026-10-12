@@ -1,5 +1,5 @@
 //! Convert a DIAMOND `.dmnd` database (format version 3, DIAMOND 2.x) to a
-//! protein FASTA, for tools that need one. Sentinel itself reads `.dmnd`
+//! protein FASTA, for tools that need one. Sentinel-X itself reads `.dmnd`
 //! files in place.
 //!
 //! Layout (little endian): magic `u64` @0, `db_version` `u32` @12, sequence
@@ -89,7 +89,7 @@ pub fn dmnd_to_fasta(dmnd_path: &Path, fasta_out: &Path) -> Result<DmndConversio
     drop(w);
     std::fs::rename(&part, fasta_out).with_context(|| format!("finalising {}", fasta_out.display()))?;
     if total != letters {
-        eprintln!("[sentinel] note: {} residues written, header says {}", total, letters);
+        eprintln!("[sentinel-x] note: {} residues written, header says {}", total, letters);
     }
     Ok(DmndConversion { sequences: n, letters: total })
 }

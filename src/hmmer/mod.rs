@@ -1,6 +1,6 @@
-//! # Sentinel HMMER engine
+//! # Sentinel-X HMMER engine
 //!
-//! A pure-Rust reimplementation of the parts of HMMER3 (3.4) that Sentinel's
+//! A pure-Rust reimplementation of the parts of HMMER3 (3.4) that Sentinel-X's
 //! validators need — no C, no FFI, no `hmmsearch` subprocess:
 //!
 //! * [`parse`] — streaming HMMER3 `.hmm` parser (plain or gzip);

@@ -1,9 +1,9 @@
-//! Optional cross-check of Sentinel's assembly statistics against the
+//! Optional cross-check of Sentinel-X's assembly statistics against the
 //! crates.io [`rustyomestats`] crate (`--features rustyomestats`).
 //!
 //! rustyomestats 0.2.x needs rustc >= 1.88 and pulls in polars, plotters and
 //! rust-bio, so it is not part of the default build. With the feature on,
-//! `sentinel run` recomputes sequence count, total length, base composition
+//! `sentinel-x run` recomputes sequence count, total length, base composition
 //! and N50/L50 for every input file with rustyomestats and reports whether
 //! the two implementations agree.
 //!
@@ -28,10 +28,10 @@ pub struct BasicCounts {
     pub l50: usize,
 }
 
-/// Sentinel's own numbers. Bases are counted as rustyomestats counts them
+/// Sentinel-X's own numbers. Bases are counted as rustyomestats counts them
 /// (G/C; A/T/U; N; anything else ignored); N50/L50 use the standard
 /// definition (cumulative length * 2 >= total).
-pub fn sentinel_counts(contigs: &[Contig]) -> BasicCounts {
+pub fn sentinel_x_counts(contigs: &[Contig]) -> BasicCounts {
     let mut c = BasicCounts { seqs: contigs.len(), ..Default::default() };
     let mut lengths: Vec<usize> = Vec::with_capacity(contigs.len());
     for ctg in contigs {
@@ -97,7 +97,7 @@ pub fn differences(s: &BasicCounts, r: &BasicCounts) -> Vec<String> {
     let mut d = Vec::new();
     let mut cmp = |what: &str, a: usize, b: usize| {
         if a != b {
-            d.push(format!("{what}: sentinel {a} vs rustyomestats {b}"));
+            d.push(format!("{what}: sentinel-x {a} vs rustyomestats {b}"));
         }
     };
     cmp("sequences", s.seqs, r.seqs);
@@ -112,13 +112,13 @@ pub fn differences(s: &BasicCounts, r: &BasicCounts) -> Vec<String> {
 
 /// Run the cross-check for one input file and log the outcome.
 pub fn crosscheck(label: &str, contigs: &[Contig]) {
-    let s = sentinel_counts(contigs);
+    let s = sentinel_x_counts(contigs);
     let r = rustyomestats_counts(contigs);
     let d = differences(&s, &r);
     let gc = if s.gc + s.at > 0 { 100.0 * s.gc as f64 / (s.gc + s.at) as f64 } else { 0.0 };
     if d.is_empty() {
         eprintln!(
-            "[sentinel] rustyomestats cross-check {label}: agrees ({} sequence{}, {} bp, GC {gc:.2}%, N50 {} / L50 {})",
+            "[sentinel-x] rustyomestats cross-check {label}: agrees ({} sequence{}, {} bp, GC {gc:.2}%, N50 {} / L50 {})",
             s.seqs,
             if s.seqs == 1 { "" } else { "s" },
             s.total,
@@ -131,7 +131,7 @@ pub fn crosscheck(label: &str, contigs: &[Contig]) {
         } else {
             ""
         };
-        eprintln!("[sentinel] rustyomestats cross-check {label}: DIFFERS — {}{note}", d.join("; "));
+        eprintln!("[sentinel-x] rustyomestats cross-check {label}: DIFFERS — {}{note}", d.join("; "));
     }
 }
 
@@ -153,7 +153,7 @@ mod tests {
     #[test]
     fn agrees_on_even_totals() {
         let cs = contigs(&[1000, 800, 600, 400]);
-        let (s, r) = (sentinel_counts(&cs), rustyomestats_counts(&cs));
+        let (s, r) = (sentinel_x_counts(&cs), rustyomestats_counts(&cs));
         assert_eq!(s, r);
         assert!(differences(&s, &r).is_empty());
     }
@@ -161,7 +161,7 @@ mod tests {
     #[test]
     fn documents_the_odd_total_n50_difference() {
         let cs = contigs(&[4, 3, 2]);
-        let (s, r) = (sentinel_counts(&cs), rustyomestats_counts(&cs));
+        let (s, r) = (sentinel_x_counts(&cs), rustyomestats_counts(&cs));
         assert_eq!((s.n50, s.l50), (3, 2));
         assert_eq!((r.n50, r.l50), (4, 1));
         assert_eq!((s.seqs, s.total, s.gc, s.at, s.n), (r.seqs, r.total, r.gc, r.at, r.n));

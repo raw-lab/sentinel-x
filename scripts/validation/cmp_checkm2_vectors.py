@@ -1,5 +1,5 @@
 """Compare CheckM2's feature vectors (--dbg_vectors pickle) and raw model
-outputs with Sentinel's dumps (SENTINEL_CHECKM2_DEBUG)."""
+outputs with Sentinel-X's dumps (SENTINEL_X_CHECKM2_DEBUG)."""
 import sys, os, warnings, pickle
 os.environ.setdefault('KERAS_BACKEND', 'jax')
 warnings.filterwarnings('ignore')

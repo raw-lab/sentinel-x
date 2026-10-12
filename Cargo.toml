@@ -1,16 +1,16 @@
 [package]
-name = "sentinel-qc"
+name = "sentinel-x"
 version = "0.2.0"
 edition = "2021"
 rust-version = "1.75"
 license = "CC-BY-NC-4.0"
 authors = ["Richard Allen White III <rwhit101@charlotte.edu>"]
-description = "Sentinel: unified, pure-Rust genome QC for viruses/phages, bacteria, archaea and eukaryotes (CheckV + CheckM2 + BUSCO + EukCC + viralVerify in one binary)."
-repository = "https://github.com/raw-lab/sentinel"
+description = "Sentinel-X: unified, pure-Rust genome QC for viruses/phages, bacteria, archaea and eukaryotes (CheckV + CheckM2 + BUSCO + EukCC + viralVerify in one binary)."
+repository = "https://github.com/raw-lab/sentinel-x"
 readme = "README.md"
 keywords = ["bioinformatics", "genomics", "quality-control", "checkv", "checkm2"]
-categories = ["science", "command-line-utilities"]
-include = ["/src/**/*.rs", "/src/**/testdata/*", "/assets/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/VALIDATION.md", "/AUDIT.md", "/LICENSE*"]
+categories = ["science::bioinformatics::genomics", "command-line-utilities"]
+include = ["/src/**/*.rs", "/src/protsearch/motifs.txt", "/src/**/testdata/*", "/assets/**", "/Cargo.toml", "/Cargo.lock", "/README.md", "/VALIDATION.md", "/AUDIT.md", "/LICENSE*"]
 autobins = false
 autoexamples = false
 autotests = false
@@ -19,16 +19,17 @@ autobenches = false
 # ONE crate: a single binary target and no library target, so cargo builds
 # exactly one crate (no separate lib + bin compilation units).
 [[bin]]
-name = "sentinel"
+name = "sentinel-x"
 path = "src/main.rs"
 
 [features]
 default = ["embed-models", "reads", "scale"]
-# Embed the CheckM2 LightGBM models (~11 MB) in the binary (no model download).
+# Embed CheckM2's LightGBM and neural-network models (~9 MB compressed) in the
+# binary (no model download).
 embed-models = []
 # Large-input chunking via Cleaver-X.
 reads = ["dep:cleaver"]
-# `sentinel cluster-status` via HydraMPP.
+# `sentinel-x cluster-status` via HydraMPP.
 scale = ["dep:hydra-mpp"]
 # Cross-check assembly statistics (sequence count, length, base composition,
 # N50/L50) with the crates.io `rustyomestats` crate on every run.

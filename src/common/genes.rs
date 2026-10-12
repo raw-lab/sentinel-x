@@ -1,5 +1,5 @@
 //! ORF / gene calling, delegated to the **DYNAMITE** engine (`dynamite-orfs`
-//! on crates.io). Sentinel calls genes once per run; the protein-level
+//! on crates.io). Sentinel-X calls genes once per run; the protein-level
 //! validators (CheckV, CheckM2, BUSCO, EukCC) then annotate the same
 //! predicted proteins. This module is the bridge from [`Contig`] to DYNAMITE
 //! and back, normalising DYNAMITE's output to Prodigal conventions:

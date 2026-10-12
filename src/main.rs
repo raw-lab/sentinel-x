@@ -1,4 +1,4 @@
-//! # Sentinel CLI
+//! # Sentinel-X CLI
 //!
 //! Unified genome quality-control: one gene call, every validator. See
 //! [`run`](crate) `--help` for usage.
@@ -26,11 +26,11 @@ mod pipeline;
 use crate::common::{banner, Domain, VERSION};
 use anyhow::{bail, Result};
 
-const RUN_HELP: &str = r#"`sentinel run` OPTIONS
+const RUN_HELP: &str = r#"`sentinel-x run` OPTIONS
     -i, --input <FASTA|DIR>    Nucleotide FASTA (.fa/.fna[.gz]); a directory = one genome per file
     -d, --domain <D>           virus | bacteria | archaea | eukaryote | mixed      [default: mixed]
                                (`auto` is accepted as an alias of `mixed`)
-        --db <DIR>             Database root                     [default: $SENTINEL_DB or ~/.sentinel/db]
+        --db <DIR>             Database root                     [default: $SENTINEL_X_DB or ~/.sentinel-x/db]
     -o, --output <TSV>         Unified QC table ("-" = stdout)                   [default: stdout]
         --json <PATH>          Also write the table as JSON
         --html <PATH>          HTML report path        [default: next to -o; never for stdout or /dev/*]
@@ -44,7 +44,7 @@ const RUN_HELP: &str = r#"`sentinel run` OPTIONS
         --proteins <FAA>       CheckV: use these Prodigal-format proteins instead of calling genes
         --checkv-strict        Reproduce CheckV 1.1.1 exactly, including its grouping of DIAMOND
                                hits by output order (AAI computed per fragment; see AUDIT.md)
-        --viralverify          Run viralVerify (Pfam-A search; needs `sentinel download pfam`)
+        --viralverify          Run viralVerify (Pfam-A search; needs `sentinel-x download pfam`)
         --chunk-size <BYTES>   Process a huge FASTA in Cleaver-X chunks (bounded memory)
       bacteria / archaea
         --ttable <N>           CheckM2 translation table (default: choose 4 or 11 as CheckM2 does)
@@ -63,14 +63,14 @@ const RUN_HELP: &str = r#"`sentinel run` OPTIONS
 fn print_help() {
     println!("{}", banner());
     println!(
-        r#"Sentinel {ver} — unified genome quality control
+        r#"Sentinel-X {ver} — unified genome quality control
 Completeness, contamination and structural checks for viruses, bacteria,
 archaea and eukaryotes: CheckV, CheckM2, BUSCO, EukCC and viralVerify
 re-implemented in one Rust binary, plus database-free TRACE, CHIMERA-SCAN
 and SAGE.
 
 USAGE
-    sentinel <COMMAND> [OPTIONS]
+    sentinel-x <COMMAND> [OPTIONS]
 
 ANALYSIS
     run                    Assess a FASTA of contigs/genomes (options below)
@@ -90,7 +90,7 @@ CLUSTER
 
 {run_help}
 DATABASES (detail)
-    Root: --db <DIR>  >  $SENTINEL_DB  >  ~/.sentinel/db
+    Root: --db <DIR>  >  $SENTINEL_X_DB  >  ~/.sentinel-x/db
     CheckV   portal.nersc.gov/CheckV            (CURRENT_RELEASE.txt → release tarball)
     CheckM2  doi.org/10.5281/zenodo.14897628    (MD5 + CONTENTS.json + SHA-256 verified)
     Pfam-A   ftp.ebi.ac.uk current_release      (MD5 verified)
@@ -102,14 +102,14 @@ ROUTING BY DOMAIN
     eukaryote          per genome: EukCC (--markers), BUSCO (--lineage), SAGE; CHIMERA-SCAN per contig
 
 EXAMPLES
-    sentinel download checkv
-    sentinel run -i phages.fna -d virus -o viral.tsv --outdir viral_out -t 8
-    sentinel download checkm2
-    sentinel run -i bins/ -d bacteria -o bins.tsv --outdir bins_out -t 16
-    sentinel download busco --lineage bacteria_odb12.2
-    sentinel run -i genome.fna -d bacteria --lineage bacteria_odb12.2 -o qc.tsv
+    sentinel-x download checkv
+    sentinel-x run -i phages.fna -d virus -o viral.tsv --outdir viral_out -t 8
+    sentinel-x download checkm2
+    sentinel-x run -i bins/ -d bacteria -o bins.tsv --outdir bins_out -t 16
+    sentinel-x download busco --lineage bacteria_odb12.2
+    sentinel-x run -i genome.fna -d bacteria --lineage bacteria_odb12.2 -o qc.tsv
 
-Docs: github.com/raw-lab   ·   License: CC-BY-NC-4.0
+Docs: github.com/raw-lab/sentinel-x   ·   License: CC-BY-NC-4.0
 "#,
         ver = VERSION,
         run_help = RUN_HELP
@@ -120,7 +120,7 @@ fn print_version() {
     println!("{}", banner());
     let feat = |on: bool| if on { "on" } else { "off" };
     println!(
-        r#"sentinel {ver}
+        r#"sentinel-x {ver}
 
 build
     edition           Rust 2021 (MSRV 1.75)
@@ -133,7 +133,7 @@ components
     engines           dynamite-orfs · HMMER 3.4-compatible search · DIAMOND 2.1-compatible search
                       · LightGBM evaluator · Cleaver-X · HydraMPP · rayon
 
-License: CC-BY-NC-4.0   ·   github.com/raw-lab"#,
+License: CC-BY-NC-4.0   ·   github.com/raw-lab/sentinel-x"#,
         ver = VERSION,
         profile = if cfg!(debug_assertions) { "debug" } else { "release" },
         em = feat(cfg!(feature = "embed-models")),
@@ -146,7 +146,7 @@ License: CC-BY-NC-4.0   ·   github.com/raw-lab"#,
 fn print_info() {
     println!("{}", banner());
     println!(
-        r#"Sentinel {ver} — genome quality control for every domain of life
+        r#"Sentinel-X {ver} — genome quality control for every domain of life
 
 REFERENCE VALIDATORS (re-implemented in Rust)
     CheckV        viral completeness (AAI + HMM), host contamination, proviruses,
@@ -171,14 +171,14 @@ ENGINES
     HydraMPP        cluster status                            [feature: scale]
     rustyomestats   assembly-statistics cross-check           [feature: rustyomestats]
 
-Run `sentinel help` for usage and `sentinel doctor` for database status."#,
+Run `sentinel-x help` for usage and `sentinel-x doctor` for database status."#,
         ver = VERSION
     );
 }
 
 fn main() {
-    // Restore default SIGPIPE handling so that piping Sentinel's output into a
-    // consumer that closes early (e.g. `sentinel help | head`) terminates the
+    // Restore default SIGPIPE handling so that piping Sentinel-X's output into a
+    // consumer that closes early (e.g. `sentinel-x help | head`) terminates the
     // process quietly, like every other Unix tool, instead of turning the
     // broken pipe into a panic/abort (Rust ignores SIGPIPE by default).
     #[cfg(unix)]
@@ -187,7 +187,7 @@ fn main() {
     }
 
     if let Err(e) = real_main() {
-        eprintln!("sentinel: error: {e:#}");
+        eprintln!("sentinel-x: error: {e:#}");
         std::process::exit(1);
     }
 }
@@ -223,24 +223,24 @@ fn real_main() -> Result<()> {
             None => Ok(()),
         },
         other => {
-            bail!("unknown command '{other}'. Try `sentinel help`.");
+            bail!("unknown command '{other}'. Try `sentinel-x help`.");
         }
     }
 }
 
-/// `sentinel convert <in.dmnd> <out.fasta>` — extract a DIAMOND database to a
+/// `sentinel-x convert <in.dmnd> <out.fasta>` — extract a DIAMOND database to a
 /// plain protein FASTA (headers preserved), for use with other tools.
-/// Sentinel itself searches `.dmnd` files in place; no DIAMOND binary is
+/// Sentinel-X itself searches `.dmnd` files in place; no DIAMOND binary is
 /// invoked.
 fn convert_cmd(args: &[String]) -> Result<()> {
     if args.iter().any(|a| a == "-h" || a == "--help") {
-        println!("usage: sentinel convert <in.dmnd> <out.fasta>\n");
+        println!("usage: sentinel-x convert <in.dmnd> <out.fasta>\n");
         println!("Extract a DIAMOND (.dmnd) database to protein FASTA (headers kept, e.g. CheckM2's `accession~KO`).");
-        println!("Sentinel reads .dmnd files directly; conversion is only needed for other tools.");
+        println!("Sentinel-X reads .dmnd files directly; conversion is only needed for other tools.");
         return Ok(());
     }
     if args.len() != 2 {
-        bail!("usage: sentinel convert <in.dmnd> <out.fasta>");
+        bail!("usage: sentinel-x convert <in.dmnd> <out.fasta>");
     }
     let input = std::path::Path::new(&args[0]);
     let output = std::path::Path::new(&args[1]);
@@ -250,10 +250,10 @@ fn convert_cmd(args: &[String]) -> Result<()> {
     Ok(())
 }
 
-/// `sentinel blastp`: the DIAMOND-compatible protein search on its own
+/// `sentinel-x blastp`: the DIAMOND-compatible protein search on its own
 /// (BLAST tabular output, DIAMOND's formatting and order).
 fn blastp_cmd(args: &[String]) -> Result<()> {
-    let usage = "usage: sentinel blastp -q <queries.faa> -d <db.dmnd|db.faa> [--preset checkv|checkm2] \
+    let usage = "usage: sentinel-x blastp -q <queries.faa> -d <db.dmnd|db.faa> [--preset checkv|checkm2] \
                  [--evalue E] [--id P] [--query-cover P] [--subject-cover P] [-k N] [-t N]";
     let mut q = None;
     let mut db = None;
@@ -299,11 +299,11 @@ fn blastp_cmd(args: &[String]) -> Result<()> {
         writeln!(out, "{}", h.outfmt6(&queries[h.query].0))?;
     }
     out.flush()?;
-    eprintln!("[sentinel blastp] {} queries, {} hits, {} reference letters", queries.len(), st.hits, st.db_letters);
+    eprintln!("[sentinel-x blastp] {} queries, {} hits, {} reference letters", queries.len(), st.hits, st.db_letters);
     Ok(())
 }
 
-/// Parsed options for `sentinel run`.
+/// Parsed options for `sentinel-x run`.
 #[derive(Debug, Clone)]
 pub struct Options {
     pub input: String,
@@ -422,9 +422,11 @@ impl Options {
                 "--lineage" => o.lineage = Some(value(&mut i, a)?),
                 "--markers" => o.markers = Some(value(&mut i, a)?),
                 "--gpu" => o.gpu = true,
-                "--scale" => eprintln!("[sentinel] note: --scale is no longer needed (contigs are always processed in parallel)"),
+                "--scale" => {
+                    eprintln!("[sentinel-x] note: --scale is no longer needed (contigs are always processed in parallel)")
+                }
                 other if !other.starts_with('-') && o.input.is_empty() => o.input = other.to_string(),
-                other => bail!("unknown option '{other}' (see `sentinel run --help`)"),
+                other => bail!("unknown option '{other}' (see `sentinel-x run --help`)"),
             }
             i += 1;
         }

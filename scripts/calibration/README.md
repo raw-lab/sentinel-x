@@ -10,7 +10,7 @@ Python/NumPy re-implementations used to calibrate the reference-free modules
 * `sage_eval.py` — shows the old protein-composition index falling as
   contamination rises.
 * `sage2.py`, `sage5.py` — contig-level discordance on simulated MAGs
-  (single-linkage and the core-centroid estimator Sentinel uses).
+  (single-linkage and the core-centroid estimator Sentinel-X uses).
 * `sage_xcheck.py` — writes three simulated bins for a Rust/Python check.
 
 Inputs: `TEST_BINS` = folder with `TEST1.fna`, `TEST2.fna`, `TEST3.fna`

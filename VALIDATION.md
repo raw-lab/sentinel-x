@@ -1,8 +1,7 @@
-# Sentinel 0.2.0 — validation against the original tools
+# Sentinel-X 0.2.0 — validation against the original tools
 
-Each section runs the original tool and Sentinel on the same inputs and
-compares their native output files. The results are summarised in
-[AUDIT.md §4](AUDIT.md#4-head-to-head-comparisons); this file records the
+Each section runs the original tool and Sentinel-X on the same inputs and
+compares their native output files. This file records the
 setup, the commands and the full tables.
 
 ## Environment
@@ -17,7 +16,7 @@ setup, the commands and the full tables.
 | DIAMOND | 2.1.9 (also 2.2.0) | `diamond blastp` with CheckV's and CheckM2's settings |
 | Prodigal | 2.6.3 | as called by CheckM2 |
 
-* Sentinel was built with `cargo build --release --locked` on rustc 1.97 and on rustc 1.75 (Ubuntu apt). Both builds produce the same results and pass 126/126 tests.
+* Sentinel-X was built with `cargo build --release --locked` on rustc 1.97 and on rustc 1.75 (Ubuntu apt). Both builds produce the same results and pass 126/126 tests.
 * Python 3.13 throughout.
 
 ### Databases
@@ -40,7 +39,7 @@ the same one:
 
 ```bash
 checkv end_to_end test_sequences.fna cv_out -d checkv-db-v1.5-mini
-sentinel run -i test_sequences.fna -d virus --db sroot --proteins cv_out/tmp/proteins.faa \
+sentinel-x run -i test_sequences.fna -d virus --db sroot --proteins cv_out/tmp/proteins.faa \
      --checkv-strict --no-novel --outdir s_strict -o s_strict.tsv
 python3 scripts/validation/cmp_checkv.py cv_out s_strict/checkv
 ```
@@ -61,16 +60,16 @@ python3 scripts/validation/cmp_checkv.py cv_out s_strict/checkv
 
 ### 1b. Default mode
 
-In default mode Sentinel computes one AAI per contig. CheckV 1.1.1 instead
+In default mode Sentinel-X computes one AAI per contig. CheckV 1.1.1 instead
 computes it per fragment, a side effect of the DIAMOND output order (see
 AUDIT UP-01).
 
 | run | High | Medium | Low | Not-determined |
 |---|---|---|---|---|
 | CheckV 1.1.1 | 5 | 28 | 9 | 4 |
-| Sentinel `--checkv-strict` | 5 | 28 | 9 | 4 |
-| Sentinel default, CheckV's proteins | 19 | 20 | 5 | 2 |
-| Sentinel default, own gene calls | 19 | 20 | 5 | 2 |
+| Sentinel-X `--checkv-strict` | 5 | 28 | 9 | 4 |
+| Sentinel-X default, CheckV's proteins | 19 | 20 | 5 | 2 |
+| Sentinel-X default, own gene calls | 19 | 20 | 5 | 2 |
 
 The mini database contains the test genomes, so using all of a contig's hits
 pushes many contigs to ~100 % AAI completeness. Expect a much smaller shift
@@ -78,7 +77,7 @@ on the real database.
 
 ### 1c. Gene calls
 
-Sentinel's prodigal-gv preset (dynamite-orfs) against pyrodigal-gv:
+Sentinel-X's prodigal-gv preset (dynamite-orfs) against pyrodigal-gv:
 
 * 1,328 vs 1,177 genes.
 * 949 genes (80.6 %) have identical coordinates; 1,055 (89.6 %) share their stop codon.
@@ -96,12 +95,12 @@ Sentinel's prodigal-gv preset (dynamite-orfs) against pyrodigal-gv:
 
 ```bash
 checkm2 predict -i prot_bins/ --genes -x faa -o cm2_genes --database_path db/.../uniref100.KO.1.dmnd
-sentinel run -i prot_bins/ -d bacteria --genes --db db --outdir s_genes -o s_genes.tsv
+sentinel-x run -i prot_bins/ -d bacteria --genes --db db --outdir s_genes -o s_genes.tsv
 diff cm2_genes/quality_report.tsv s_genes/checkm2/quality_report.tsv     # no output
 ```
 
 * `quality_report.tsv` is **byte-identical** for 6/6 genomes.
-* **Intermediate values** were checked against CheckM2's dumped arrays (`SENTINEL_CHECKM2_DEBUG=<dir>` writes Sentinel's vector and raw predictions):
+* **Intermediate values** were checked against CheckM2's dumped arrays (`SENTINEL_X_CHECKM2_DEBUG=<dir>` writes Sentinel-X's vector and raw predictions):
   * The 21,241-feature vectors are bit-identical: 22 metadata, 19,999 KO counts, 416 pathways, 757 modules, 47 categories.
   * Both LightGBM predictions and the maximum cosine similarity are bit-identical.
   * The specific network's output is within 1–2 float32 ulps, and identical after CheckM2's rounding.
@@ -110,10 +109,10 @@ diff cm2_genes/quality_report.tsv s_genes/checkm2/quality_report.tsv     # no ou
 
 ```bash
 checkm2 predict -i bins/ -x fna -o cm2_out --database_path …
-sentinel run -i bins/ -d bacteria --db db --outdir s_own -o s_own.tsv
+sentinel-x run -i bins/ -d bacteria --db db --outdir s_own -o s_own.tsv
 ```
 
-| genome | CheckM2 comp / cont | Sentinel comp / cont | model | ttable | CDS (Prodigal / Sentinel) | identical gene coords |
+| genome | CheckM2 comp / cont | Sentinel-X comp / cont | model | ttable | CDS (Prodigal / Sentinel-X) | identical gene coords |
 |---|---|---|---|---|---|---|
 | TEST1 | 87.76 / 10.12 | 87.75 / 10.12 | specific, both | 11 | 4876 / 4873 | 99.9 % |
 | TEST2 | 88.10 / 0.23 | 88.12 / 0.23 | specific, both | 11 | 706 / 711 | 93.8 % |
@@ -130,10 +129,10 @@ sentinel run -i bins/ -d bacteria --db db --outdir s_own -o s_own.tsv
 
 ```bash
 busco -i genome.faa -m proteins -l lineages/mini_odb12.2 --offline -o busco_mini_odb12.2
-sentinel run -i genome.faa -d bacteria --genes --lineage lineages/mini_odb12.2 --outdir s_mini_odb12.2
+sentinel-x run -i genome.faa -d bacteria --genes --lineage lineages/mini_odb12.2 --outdir s_mini_odb12.2
 ```
 
-| lineage format | BUSCO summary | Sentinel summary | status + gene identical |
+| lineage format | BUSCO summary | Sentinel-X summary | status + gene identical |
 |---|---|---|---|
 | odb10 | `C:83.3%[S:73.3%,D:10.0%],F:3.3%,M:13.3%,n:60` | identical | 60/60 |
 | odb12 | `C:83.3%[S:73.3%,D:10.0%],F:3.3%,M:13.3%,n:60` | identical | 60/60 |
@@ -150,20 +149,20 @@ subset.
 
 | comparison | identical predictions |
 |---|---|
-| viralVerify's classifier on Sentinel's proteins and domain table (`scripts/validation/vv_classify_domtbl.py`) vs Sentinel | 46/46, scores identical too |
+| viralVerify's classifier on Sentinel-X's proteins and domain table (`scripts/validation/vv_classify_domtbl.py`) vs Sentinel-X | 46/46, scores identical too |
 | end to end, each tool calling its own genes | 45/46 |
 
 The one end-to-end difference is CheckV's provirus `…1106445189670`:
-viralVerify says Chromosome (−66.04), Sentinel says Uncertain (−5.12). The
+viralVerify says Chromosome (−66.04), Sentinel-X says Uncertain (−5.12). The
 two gene callers find different gene sets on this contig. The embedded
 classifier table is byte-identical to viralVerify's
 `classifier_table_uniq.txt`.
 
-## 5. DIAMOND-compatible search (`sentinel blastp`)
+## 5. DIAMOND-compatible search (`sentinel-x blastp`)
 
 Run with 2 threads; the outputs are compared with `cmp`.
 
-| database / queries | settings | DIAMOND rows | identical rows | time DIAMOND / Sentinel |
+| database / queries | settings | DIAMOND rows | identical rows | time DIAMOND / Sentinel-X |
 |---|---|---|---|---|
 | synthetic CheckM2 DB (2.08 M letters) / 4,876 proteins | CheckM2: `--max-target-seqs 1 --query-cover 80 --subject-cover 80 --id 30 --evalue 1e-05` | 2,490 | 2,490, file identical | 1.0 s / 1.6 s |
 | simulated 227,425-sequence DB (75 MB) / 4,869 queries | CheckM2 | 4,658 | 4,658, file identical | 12.0 s / 15.8 s |
@@ -171,10 +170,10 @@ Run with 2 threads; the outputs are compared with `cmp`.
 
 Under CheckV's settings, 16 rows differ:
 
-* **6 rows** are alignments of proteins longer than 1,000 aa. DIAMOND splits the seed diagonals into chained bands and stops early; Sentinel's band covers all of them and finds the higher-scoring alignment (for example 812 vs 803 bits).
-* **10 rows** are borderline hits that Sentinel misses.
+* **6 rows** are alignments of proteins longer than 1,000 aa. DIAMOND splits the seed diagonals into chained bands and stops early; Sentinel-X's band covers all of them and finds the higher-scoring alignment (for example 812 vs 803 bits).
+* **10 rows** are borderline hits that Sentinel-X misses.
 
-Sentinel also reports 28 hits that DIAMOND does not. On CheckV's test data
+Sentinel-X also reports 28 hits that DIAMOND does not. On CheckV's test data
 the search is exact: `tmp/aai.tsv` matches 150/150 rows.
 
 ## 6. Reference-free modules
@@ -200,12 +199,12 @@ spot checks:
 ## 7. Database downloads
 
 * **Local mirror test.** A local HTTP mirror reproduced each upstream's protocol: CheckV's `CURRENT_RELEASE.txt`, a DOI redirect, the Zenodo API with a `CONTENTS.json` backpack, Pfam's `md5_checksums`, and BUSCO's `file_versions.tsv`.
-  * Sentinel pointed at it with the `SENTINEL_*_URL` variables installed all four databases and passed `doctor --verify`.
+  * Sentinel-X pointed at it with the `SENTINEL_X_*_URL` variables installed all four databases and passed `doctor --verify`.
   * A second run skipped all four.
   * A wrong SHA-256, an MD5 mismatch and an unknown lineage each failed cleanly and installed nothing.
 * **Real servers.** These were not reachable from the build sandbox: the proxy answered 403 for `portal.nersc.gov`, `doi.org`, `zenodo.org`, `ftp.ebi.ac.uk`, `busco-data.ezlab.org` and `busco-data2.ezlab.org`. Downloading the real databases still needs a networked machine:
 
   ```bash
-  sentinel download all --lineage bacteria_odb12.2
-  sentinel doctor --verify
+  sentinel-x download all --lineage bacteria_odb12.2
+  sentinel-x doctor --verify
   ```

@@ -2,7 +2,7 @@
 //!
 //! A reference-free screen for contigs that join DNA of two different
 //! compositions (mis-assembled inter-species chimeras). The contig is tiled
-//! into windows (5 kb in `sentinel run`), each window gets its canonical
+//! into windows (5 kb in `sentinel-x run`), each window gets its canonical
 //! (reverse-complement folded) tetranucleotide profile, and every split of
 //! the window series into a left and a right segment (≥ 2 windows each) is
 //! scored by the between-segment sum of squares. At the best split the
@@ -13,7 +13,7 @@
 //! ```
 //!
 //! and the contig is flagged when `D` reaches the threshold (0.12 in
-//! `sentinel run`). Using segment means rather than single windows is what
+//! `sentinel-x run`). Using segment means rather than single windows is what
 //! keeps genomic islands, rRNA operons and prophages inside an otherwise
 //! homogeneous contig from being called: one atypical block barely moves
 //! either segment mean, whereas the two halves of a chimera differ along
